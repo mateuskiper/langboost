@@ -1,0 +1,48 @@
+<Window x:Class="LangBoost.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LangBoost · Configurações"
+        Width="460" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen">
+
+    <Border CornerRadius="14" Padding="22,18" Background="#F21B1B1F">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
+        </Border.Effect>
+
+        <StackPanel>
+            <TextBlock Text="Configurações" Foreground="White"
+                       FontFamily="Segoe UI" FontSize="20" FontWeight="SemiBold"/>
+
+            <!-- Chave de API -->
+            <TextBlock Text="Chave da API do Gemini" Foreground="#FF9AA0A6"
+                       FontFamily="Segoe UI" FontSize="13" Margin="0,16,0,4"/>
+            <PasswordBox x:Name="ApiKeyBox" FontFamily="Segoe UI" FontSize="14"
+                         Padding="8,6" Background="#FF2A2A30" Foreground="White"
+                         BorderBrush="#FF3A3A42"/>
+            <TextBlock x:Name="EnvWarning" Foreground="#FFE0B050"
+                       FontFamily="Segoe UI" FontSize="12" TextWrapping="Wrap"
+                       Margin="0,6,0,0" Visibility="Collapsed"
+                       Text="A variável de ambiente GEMINI_API_KEY está definida e tem precedência: a chave salva aqui só valerá se a variável for removida."/>
+
+            <!-- Buffer -->
+            <TextBlock x:Name="BufferLabel" Foreground="#FF9AA0A6"
+                       FontFamily="Segoe UI" FontSize="13" Margin="0,18,0,4"
+                       Text="Tempo de áudio (buffer): 5 s"/>
+            <Slider x:Name="BufferSlider" Minimum="1" Maximum="10"
+                    IsSnapToTickEnabled="True" TickFrequency="1"
+                    TickPlacement="BottomRight"
+                    ValueChanged="OnBufferChanged"/>
+
+            <!-- Ações -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+                <Button Content="Cancelar" Style="{StaticResource FlatButton}"
+                        Click="OnCancel" Margin="0,0,10,0"/>
+                <Button Content="Salvar" Style="{StaticResource FlatButton}"
+                        Click="OnSave"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

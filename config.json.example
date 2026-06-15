@@ -1,0 +1,5 @@
+{
+  "apiKey": "SUA_CHAVE_DO_GEMINI_AQUI",
+  "model": "gemini-2.5-flash",
+  "bufferSeconds": 5
+}
