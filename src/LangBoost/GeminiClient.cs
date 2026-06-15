@@ -79,7 +79,7 @@ public sealed class GeminiClient
         return ParseResult(json);
     }
 
-    private static TranscriptionResult ParseResult(string json)
+    internal static TranscriptionResult ParseResult(string json)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -104,7 +104,7 @@ public sealed class GeminiClient
         return new TranscriptionResult(original.Trim(), traducao.Trim());
     }
 
-    private static string ExtractError(string json)
+    internal static string ExtractError(string json)
     {
         try
         {

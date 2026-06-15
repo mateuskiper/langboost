@@ -80,14 +80,14 @@ public sealed class AppConfig
             JsonSerializer.Serialize(file, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    private static string Protect(string plain)
+    internal static string Protect(string plain)
     {
         byte[] cipher = ProtectedData.Protect(
             Encoding.UTF8.GetBytes(plain), null, DataProtectionScope.CurrentUser);
         return Convert.ToBase64String(cipher);
     }
 
-    private static string? Unprotect(string base64)
+    internal static string? Unprotect(string base64)
     {
         try
         {

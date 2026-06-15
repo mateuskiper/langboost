@@ -21,13 +21,26 @@ dotnet build LangBoost.sln -c Debug      # or -c Release
 # Run (needs the key in the session environment — see "Key" below)
 dotnet run --project src/LangBoost
 
+# Test (xUnit project in tests/LangBoost.Tests)
+dotnet test LangBoost.sln -c Debug
+
 # Publish a durable version (single self-contained exe, no installed runtime) to a fixed folder
 dotnet publish src/LangBoost/LangBoost.csproj -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
   -p:IncludeNativeLibrariesForSelfExtract=true -o "$env:LOCALAPPDATA\Programs\LangBoost"
 ```
 
-- **There is no test project** nor configured linter. Validation = `dotnet build` + manual run.
+- **Tests** live in `tests/LangBoost.Tests` (xUnit): `AudioRingBuffer`, `AudioFormatConverter`
+  (`TrimWav`/`ToWav16kMono`), `GeminiClient.ParseResult`/`ExtractError`, and the DPAPI
+  `AppConfig.Protect`/`Unprotect`. There is no configured linter. Validation = `dotnet build` +
+  `dotnet test` + manual run.
+- **Do NOT modify anything under `tests/`, `.githooks/`, `hooks/protect-tests.ps1` or
+  `.claude/settings.json`.** These are the protected test/governance suite — they may be changed
+  **only by the developer**, never by Claude Code. A PreToolUse hook (`hooks/protect-tests.ps1`)
+  technically blocks edits to them; do not try to work around it.
+- A **git pre-commit hook** (`.githooks/pre-commit`, enabled via `git config core.hooksPath
+  .githooks`) runs `dotnet test` and aborts the commit if any test fails. The tests are the
+  regression contract — make code changes pass them; never weaken a test to make a commit go through.
 - To validate the Gemini key without spending tokens:
   ```powershell
   Invoke-RestMethod "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash" `

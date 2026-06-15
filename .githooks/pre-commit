@@ -1,0 +1,21 @@
+#!/bin/sh
+# Runs the test suite before every commit. Aborts the commit if any test fails.
+# Enable once with:  git config core.hooksPath .githooks
+#
+# Closes any running LangBoost instance first: dotnet build/test fails to copy
+# LangBoost.exe while it is open (file lock), per CLAUDE.md.
+
+echo "[pre-commit] Closing any running LangBoost instance..."
+taskkill //F //IM LangBoost.exe >/dev/null 2>&1 || true
+
+echo "[pre-commit] Running tests (dotnet test)..."
+dotnet test LangBoost.sln -c Debug --nologo
+status=$?
+
+if [ $status -ne 0 ]; then
+  echo "[pre-commit] Tests FAILED — commit aborted. Fix the tests or use --no-verify only with developer approval."
+  exit 1
+fi
+
+echo "[pre-commit] Tests passed."
+exit 0
