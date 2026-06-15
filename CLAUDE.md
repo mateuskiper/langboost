@@ -30,7 +30,8 @@ dotnet publish src/LangBoost/LangBoost.csproj -c Release -r win-x64 --self-conta
 - **There is no test project** nor configured linter. Validation = `dotnet build` + manual run.
 - To validate the Gemini key without spending tokens:
   ```powershell
-  Invoke-RestMethod "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=$env:GEMINI_API_KEY"
+  Invoke-RestMethod "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash" `
+    -Headers @{ "x-goog-api-key" = $env:GEMINI_API_KEY }
   ```
 
 ## API key (Gemini)

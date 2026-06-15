@@ -31,7 +31,9 @@ public sealed class GeminiClient
 
     public async Task<TranscriptionResult> TranscribeAndTranslateAsync(byte[] wav, CancellationToken ct = default)
     {
-        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
+        // The key goes in the x-goog-api-key header (not the query string) so it does not leak into
+        // proxy logs, crash dumps or exception messages that may include the request URI.
+        string url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
 
         var body = new
         {
@@ -63,7 +65,10 @@ public sealed class GeminiClient
         };
 
         using var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-        using var response = await Http.PostAsync(url, content, ct);
+        // Set the key per-request: Http is a shared static instance, so we must not mutate DefaultRequestHeaders.
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+        request.Headers.Add("x-goog-api-key", _apiKey);
+        using var response = await Http.SendAsync(request, ct);
         string json = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)

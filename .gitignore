@@ -2,4 +2,11 @@ bin/
 obj/
 *.user
 .vs/
+publish/
+
+# Secrets — never commit
 config.json
+*.local.json
+secrets.json
+*.env
+.env

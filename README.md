@@ -50,10 +50,13 @@ Browser plays video → WASAPI loopback (NAudio) → circular buffer of N second
   > (The app also accepts `GOOGLE_API_KEY`.) The environment variable **takes precedence** over the
   > key saved through the interface.
 
-- **Config file**: copy `config.json.example` to
-  `%APPDATA%\LangBoost\config.json` and fill in `apiKey`.
+- **Config file** (model/buffer only): copy `config.json.example` to
+  `%APPDATA%\LangBoost\config.json`. Set the **key** through the UI (⚙) or the environment variable
+  — both options above store/handle it securely. Avoid writing the key in plain text into this file:
+  the app still reads a legacy plain-text `apiKey` field for compatibility, but it is **not
+  encrypted** and is not recommended.
 
-> The key is never committed: `config.json` is in `.gitignore`.
+> The key is never committed: `config.json` (and `.env`/`secrets.json`) are in `.gitignore`.
 
 **2. (Optional) Build** to verify everything:
 ```powershell
