@@ -1,101 +1,101 @@
 # LangBoost
 
-> Estude idiomas assistindo vídeos: capture os últimos segundos de áudio, ouça e recorte o
-> trecho, e transcreva + traduza com um atalho de teclado.
+> Study languages by watching videos: capture the last few seconds of audio, listen and trim the
+> segment, and transcribe + translate with a keyboard shortcut.
 
-Ferramenta de desktop para **Windows** que ajuda a estudar idiomas assistindo vídeos
-(YouTube, Netflix, etc.). Ela mantém em memória os **últimos segundos** do áudio do sistema
-(1 a 10s, configurável — padrão 5). Ao pressionar **Ctrl+Shift+Space**, aparece um **player de
-recorte** para você ouvir e selecionar exatamente o trecho desejado; ao clicar em **Enviar**,
-o trecho vai ao Google Gemini, que **transcreve (inglês)** e **traduz (português)** numa única
-chamada. O resultado aparece num overlay sempre visível sobre o navegador, com um **player para
-reouvir** o trecho enviado, e permanece na tela até você clicar em **Concluir**.
+A **Windows** desktop tool that helps you study languages while watching videos
+(YouTube, Netflix, etc.). It keeps the **last few seconds** of system audio in memory
+(1 to 10s, configurable — default 5). When you press **Ctrl+Shift+Space**, a **trim player**
+appears so you can listen and select exactly the segment you want; when you click **Send**,
+the segment goes to Google Gemini, which **transcribes (English)** and **translates (Portuguese)**
+in a single call. The result appears in an always-visible overlay over the browser, with a **player
+to replay** the segment that was sent, and stays on screen until you click **Done**.
 
-O overlay ainda tem um botão de **configurações (⚙)** — para ajustar o tempo do buffer e a chave
-de API — e um botão de **encerrar (✕)**.
+The overlay also has a **settings (⚙)** button — to adjust the buffer length and the API key — and
+a **close (✕)** button.
 
-## Como funciona
+## How it works
 
 ```
-Navegador toca vídeo → WASAPI loopback (NAudio) → buffer circular de N segundos
-   (Ctrl+Shift+Space) → WAV 16 kHz mono → player de recorte (ouvir + selecionar)
-   (Enviar) → trecho recortado → Gemini → { inglês, português } → overlay (texto + player)
+Browser plays video → WASAPI loopback (NAudio) → circular buffer of N seconds
+   (Ctrl+Shift+Space) → WAV 16 kHz mono → trim player (listen + select)
+   (Send) → trimmed segment → Gemini → { English, Portuguese } → overlay (text + player)
 ```
 
-- O áudio continua tocando normalmente nos alto-falantes (a captura é por loopback).
-- Funciona com conteúdo DRM (Netflix), pois o DRM afeta o vídeo, não o áudio.
-- Captura **todo o áudio do sistema** (não só o navegador), então evite notificações
-  sonoras durante o uso.
+- The audio keeps playing normally through the speakers (capture is via loopback).
+- Works with DRM content (Netflix), since DRM affects the video, not the audio.
+- Captures **all system audio** (not just the browser), so avoid sound notifications
+  while using it.
 
-## Pré-requisitos
+## Prerequisites
 
 - Windows 10/11
-- [.NET 8 SDK](https://dotnet.microsoft.com/download) (para compilar)
-- Uma **chave de API do Google Gemini** — crie em https://aistudio.google.com/apikey
+- [.NET 8 SDK](https://dotnet.microsoft.com/download) (to build)
+- A **Google Gemini API key** — create one at https://aistudio.google.com/apikey
 
-## Passo a passo para executar
+## Step by step to run
 
-**1. Configure a chave do Gemini.** Escolha **uma** das opções:
+**1. Configure the Gemini key.** Choose **one** of the options:
 
-- **Pela própria interface** (mais simples): abra o app e clique em **⚙** no overlay. Na janela de
-  configurações, cole a chave e clique em **Salvar**. A chave é gravada **criptografada** (DPAPI,
-  vinculada ao seu usuário do Windows) em `%APPDATA%\LangBoost\config.json` — nunca em texto puro.
+- **Through the interface itself** (simplest): open the app and click **⚙** in the overlay. In the
+  settings window, paste the key and click **Save**. The key is stored **encrypted** (DPAPI, bound
+  to your Windows user) in `%APPDATA%\LangBoost\config.json` — never in plain text.
 
-- **Variável de ambiente**:
+- **Environment variable**:
   ```powershell
-  setx GEMINI_API_KEY "sua_chave_aqui"
+  setx GEMINI_API_KEY "your_key_here"
   ```
-  > ⚠️ O `setx` só vale para terminais **novos**. Depois de rodá-lo, **feche e abra um
-  > novo PowerShell** antes do passo 3 — a janela atual não enxerga a variável.
-  > (O app também aceita `GOOGLE_API_KEY`.) A variável de ambiente **tem precedência** sobre a
-  > chave salva pela interface.
+  > ⚠️ `setx` only applies to **new** terminals. After running it, **close and open a
+  > new PowerShell** before step 3 — the current window does not see the variable.
+  > (The app also accepts `GOOGLE_API_KEY`.) The environment variable **takes precedence** over the
+  > key saved through the interface.
 
-- **Arquivo de config**: copie `config.json.example` para
-  `%APPDATA%\LangBoost\config.json` e preencha `apiKey`.
+- **Config file**: copy `config.json.example` to
+  `%APPDATA%\LangBoost\config.json` and fill in `apiKey`.
 
-> A chave nunca é commitada: `config.json` está no `.gitignore`.
+> The key is never committed: `config.json` is in `.gitignore`.
 
-**2. (Opcional) Compile** para verificar tudo:
+**2. (Optional) Build** to verify everything:
 ```powershell
 dotnet build LangBoost.sln -c Release
 ```
 
-**3. Execute** num terminal que já tenha a chave:
+**3. Run** in a terminal that already has the key:
 ```powershell
 dotnet run --project src/LangBoost
 ```
-> Se preferir não abrir um terminal novo, injete a chave na sessão atual antes de rodar:
+> If you prefer not to open a new terminal, inject the key into the current session before running:
 > ```powershell
 > $env:GEMINI_API_KEY = [Environment]::GetEnvironmentVariable("GEMINI_API_KEY","User")
 > dotnet run --project src/LangBoost
 > ```
 
-**4. Use:**
-1. Ao iniciar, o overlay aparece na parte inferior da tela com a dica do atalho.
-2. Reproduza um vídeo em inglês.
-3. Pressione **Ctrl+Shift+Space**. Abre o **player de recorte** com os últimos segundos capturados.
-4. Use **▶ Tocar** para ouvir e arraste as **duas alças** na trilha para delimitar o trecho. Clique
-   em **Enviar** para transcrever só a seleção (ou **Cancelar** para descartar).
-5. Leia a transcrição (EN) e a tradução (PT). Use **▶ Ouvir áudio** para reouvir o trecho enviado.
-   Clique em **Concluir** para limpar.
-6. Arraste o overlay com o mouse para reposicioná-lo, se quiser.
+**4. Use it:**
+1. On startup, the overlay appears at the bottom of the screen with the shortcut hint.
+2. Play a video in English.
+3. Press **Ctrl+Shift+Space**. The **trim player** opens with the last few captured seconds.
+4. Use **▶ Play** to listen and drag the **two handles** on the track to delimit the segment. Click
+   **Send** to transcribe only the selection (or **Cancel** to discard it).
+5. Read the transcription (EN) and the translation (PT). Use **▶ Play audio** to replay the segment
+   that was sent. Click **Done** to clear it.
+6. Drag the overlay with the mouse to reposition it, if you like.
 
-> Se o overlay mostrar *"GEMINI_API_KEY não configurada"*, defina a chave em **⚙** (ou veja o passo 1).
+> If the overlay shows *"GEMINI_API_KEY not configured"*, set the key in **⚙** (or see step 1).
 
-## Configurações (⚙)
+## Settings (⚙)
 
-Clique em **⚙** no overlay para abrir as configurações:
+Click **⚙** in the overlay to open the settings:
 
-- **Tempo de áudio (buffer):** quantos segundos manter em memória (1 a 10). A mudança vale
-  **imediatamente**, sem reiniciar o app.
-- **Chave da API do Gemini:** definida e salva criptografada (veja o passo 1).
+- **Audio buffer:** how many seconds to keep in memory (1 to 10). The change applies
+  **immediately**, without restarting the app.
+- **Gemini API key:** set and saved encrypted (see step 1).
 
-O botão **✕** encerra a aplicação.
+The **✕** button closes the application.
 
-## Instalação durável (exe único + atalho)
+## Durable installation (single exe + shortcut)
 
-Para não depender do terminal nem do .NET instalado, publique um executável **self-contained**
-(arquivo único) numa pasta fixa:
+So you don't depend on the terminal or an installed .NET, publish a **self-contained** executable
+(single file) into a fixed folder:
 
 ```powershell
 dotnet publish src/LangBoost/LangBoost.csproj -c Release -r win-x64 --self-contained true `
@@ -103,8 +103,8 @@ dotnet publish src/LangBoost/LangBoost.csproj -c Release -r win-x64 --self-conta
   -p:IncludeNativeLibrariesForSelfExtract=true -o "$env:LOCALAPPDATA\Programs\LangBoost"
 ```
 
-Isso gera `%LOCALAPPDATA%\Programs\LangBoost\LangBoost.exe`. Crie um atalho na Área de Trabalho e
-no Menu Iniciar:
+This produces `%LOCALAPPDATA%\Programs\LangBoost\LangBoost.exe`. Create a shortcut on the Desktop and
+in the Start Menu:
 
 ```powershell
 $exe = "$env:LOCALAPPDATA\Programs\LangBoost\LangBoost.exe"
@@ -116,27 +116,27 @@ foreach ($loc in @([Environment]::GetFolderPath('Desktop'), "$env:APPDATA\Micros
 }
 ```
 
-Depois é só clicar no atalho. Na primeira vez, defina a chave em **⚙**. Para atualizar, feche o app
-e rode o `dotnet publish` de novo (o atalho continua válido). Para desinstalar, apague os `.lnk` e a
-pasta `%LOCALAPPDATA%\Programs\LangBoost`.
+Then just click the shortcut. The first time, set the key in **⚙**. To update, close the app and run
+`dotnet publish` again (the shortcut stays valid). To uninstall, delete the `.lnk` files and the
+`%LOCALAPPDATA%\Programs\LangBoost` folder.
 
-## Estrutura do código (`src/LangBoost`)
+## Code structure (`src/LangBoost`)
 
-| Arquivo | Responsabilidade |
+| File | Responsibility |
 |---|---|
-| `AudioCaptureService.cs` | Captura loopback WASAPI (NAudio) |
-| `AudioRingBuffer.cs` | Buffer circular dos últimos N segundos |
-| `AudioFormatConverter.cs` | Converte para WAV 16 kHz mono PCM16; recorta o trecho selecionado |
-| `AudioPlayer.cs` | Reproduz o áudio em memória (players de recorte e de resultado) |
-| `GeminiClient.cs` | Transcrição + tradução em uma chamada |
-| `HotkeyManager.cs` | Atalho global (RegisterHotKey) |
-| `OverlayWindow.xaml(.cs)` | Overlay sempre visível; player de recorte e de resultado; botões ⚙/✕ |
-| `SettingsWindow.xaml(.cs)` | Janela de configurações (buffer e chave de API) |
-| `AppConfig.cs` | Chave/modelo/segundos; salva a chave criptografada (DPAPI) |
-| `App.xaml.cs` | Orquestração dos serviços |
+| `AudioCaptureService.cs` | WASAPI loopback capture (NAudio) |
+| `AudioRingBuffer.cs` | Circular buffer of the last N seconds |
+| `AudioFormatConverter.cs` | Converts to WAV 16 kHz mono PCM16; trims the selected segment |
+| `AudioPlayer.cs` | Plays the in-memory audio (trim and result players) |
+| `GeminiClient.cs` | Transcription + translation in one call |
+| `HotkeyManager.cs` | Global hotkey (RegisterHotKey) |
+| `OverlayWindow.xaml(.cs)` | Always-visible overlay; trim and result players; ⚙/✕ buttons |
+| `SettingsWindow.xaml(.cs)` | Settings window (buffer and API key) |
+| `AppConfig.cs` | Key/model/seconds; saves the encrypted key (DPAPI) |
+| `App.xaml.cs` | Service orchestration |
 
-## Custo e privacidade
+## Cost and privacy
 
-Cada envio manda ao Google Gemini apenas o trecho que você selecionou no player de recorte
-(no máximo os N segundos do buffer), com custo por uso conforme o modelo escolhido. O áudio sai
-da sua máquina para o serviço do Google.
+Each submission sends to Google Gemini only the segment you selected in the trim player
+(at most the N seconds of the buffer), with per-use cost according to the chosen model. The audio
+leaves your machine for Google's service.

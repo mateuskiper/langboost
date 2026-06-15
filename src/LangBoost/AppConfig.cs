@@ -6,9 +6,9 @@ using System.Text.Json;
 namespace LangBoost;
 
 /// <summary>
-/// Configuração simples. A chave do Gemini vem da variável de ambiente GEMINI_API_KEY
-/// (precedência) ou do arquivo %APPDATA%\LangBoost\config.json, onde fica criptografada
-/// com DPAPI (escopo do usuário atual). O atalho é fixo (Ctrl+Shift+Space).
+/// Simple configuration. The Gemini key comes from the GEMINI_API_KEY environment variable
+/// (precedence) or from the %APPDATA%\LangBoost\config.json file, where it is encrypted
+/// with DPAPI (current-user scope). The hotkey is fixed (Ctrl+Shift+Space).
 /// </summary>
 public sealed class AppConfig
 {
@@ -16,8 +16,8 @@ public sealed class AppConfig
     public string Model { get; internal set; } = "gemini-2.5-flash";
     public int BufferSeconds { get; internal set; } = 5;
 
-    /// <summary>True quando a chave veio de variável de ambiente (tem precedência sobre o
-    /// arquivo). Nesse caso, editar a chave pela UI não terá efeito após reabrir o app.</summary>
+    /// <summary>True when the key came from an environment variable (takes precedence over the
+    /// file). In that case, editing the key through the UI has no effect after reopening the app.</summary>
     public bool ApiKeyFromEnv { get; private set; }
 
     public uint Modifiers => HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_SHIFT;
@@ -42,17 +42,17 @@ public sealed class AppConfig
                     if (!string.IsNullOrWhiteSpace(file.Model)) cfg.Model = file.Model!;
                     if (file.BufferSeconds is > 0) cfg.BufferSeconds = file.BufferSeconds.Value;
 
-                    // Chave criptografada (formato atual) tem prioridade; texto puro é compat.
+                    // The encrypted key (current format) takes priority; plain text is for compat.
                     if (!string.IsNullOrWhiteSpace(file.ApiKeyProtected))
                         cfg.ApiKey = Unprotect(file.ApiKeyProtected!) ?? "";
                     else if (!string.IsNullOrWhiteSpace(file.ApiKey))
                         cfg.ApiKey = file.ApiKey!;
                 }
             }
-            catch { /* config inválido: usa padrões */ }
+            catch { /* invalid config: use defaults */ }
         }
 
-        // Variável de ambiente tem precedência sobre o arquivo.
+        // The environment variable takes precedence over the file.
         var env = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
                   ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
         if (!string.IsNullOrWhiteSpace(env))
@@ -64,7 +64,7 @@ public sealed class AppConfig
         return cfg;
     }
 
-    /// <summary>Grava Model, BufferSeconds e a chave (criptografada com DPAPI) em config.json.</summary>
+    /// <summary>Writes Model, BufferSeconds and the key (DPAPI-encrypted) to config.json.</summary>
     public void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
@@ -97,15 +97,15 @@ public sealed class AppConfig
         }
         catch
         {
-            // Não decripta (ex.: config copiado de outra máquina/usuário): trata como sem chave.
+            // Cannot decrypt (e.g. config copied from another machine/user): treat as no key.
             return null;
         }
     }
 
     private sealed class FileModel
     {
-        public string? ApiKey { get; set; }          // legado (texto puro) — apenas leitura
-        public string? ApiKeyProtected { get; set; } // chave criptografada com DPAPI (base64)
+        public string? ApiKey { get; set; }          // legacy (plain text) — read only
+        public string? ApiKeyProtected { get; set; } // DPAPI-encrypted key (base64)
         public string? Model { get; set; }
         public int? BufferSeconds { get; set; }
     }

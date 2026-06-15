@@ -4,9 +4,9 @@ using NAudio.Wave;
 namespace LangBoost;
 
 /// <summary>
-/// Reprodutor simples de um clipe WAV em memória (usa WaveOutEvent do NAudio).
-/// Toca a partir de uma posição; quem chama decide quando parar (ex.: ao atingir o fim
-/// da seleção) consultando <see cref="CurrentTime"/> e <see cref="IsPlaying"/>.
+/// Simple in-memory WAV clip player (uses NAudio's WaveOutEvent).
+/// Plays from a position; the caller decides when to stop (e.g. when reaching the end
+/// of the selection) by checking <see cref="CurrentTime"/> and <see cref="IsPlaying"/>.
 /// </summary>
 public sealed class AudioPlayer : IDisposable
 {
@@ -41,7 +41,7 @@ public sealed class AudioPlayer : IDisposable
     {
         if (_output is not null)
         {
-            try { _output.Stop(); } catch { /* ignora */ }
+            try { _output.Stop(); } catch { /* ignore */ }
             _output.Dispose();
             _output = null;
         }

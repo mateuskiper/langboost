@@ -5,8 +5,8 @@ using NAudio.Wave;
 namespace LangBoost;
 
 /// <summary>
-/// Converte o áudio bruto capturado (geralmente IEEE float 48 kHz estéreo) para
-/// WAV PCM 16-bit mono 16 kHz — formato pequeno e compatível com APIs de fala.
+/// Converts the raw captured audio (usually IEEE float 48 kHz stereo) to
+/// WAV PCM 16-bit mono 16 kHz — a small format compatible with speech APIs.
 /// </summary>
 public static class AudioFormatConverter
 {
@@ -21,7 +21,7 @@ public static class AudioFormatConverter
         };
 
         using var outStream = new MemoryStream();
-        // IgnoreDisposeStream evita que o WaveFileWriter feche o MemoryStream antes do ToArray.
+        // IgnoreDisposeStream keeps the WaveFileWriter from closing the MemoryStream before ToArray.
         using (var writer = new WaveFileWriter(new IgnoreDisposeStream(outStream), resampler.WaveFormat))
         {
             var buffer = new byte[resampler.WaveFormat.AverageBytesPerSecond];
@@ -36,8 +36,8 @@ public static class AudioFormatConverter
     }
 
     /// <summary>
-    /// Recorta um WAV PCM mantendo apenas o intervalo [from, to]. Usado para enviar à
-    /// transcrição só o trecho selecionado pelo usuário no player.
+    /// Trims a PCM WAV keeping only the [from, to] range. Used to send to transcription
+    /// only the segment the user selected in the player.
     /// </summary>
     public static byte[] TrimWav(byte[] wav, TimeSpan from, TimeSpan to)
     {

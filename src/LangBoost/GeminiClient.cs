@@ -7,8 +7,8 @@ namespace LangBoost;
 public sealed record TranscriptionResult(string Original, string Traducao);
 
 /// <summary>
-/// Cliente do Google Gemini. Numa única chamada, envia o áudio (WAV inline em base64)
-/// e recebe a transcrição em inglês e a tradução em português.
+/// Google Gemini client. In a single call, sends the audio (WAV inline as base64)
+/// and receives the English transcription and the Portuguese translation.
 /// </summary>
 public sealed class GeminiClient
 {
@@ -91,7 +91,7 @@ public sealed class GeminiClient
         if (string.IsNullOrWhiteSpace(text))
             return new TranscriptionResult("", "");
 
-        // O texto retornado já é o JSON { original, traducao } pedido no responseSchema.
+        // The returned text is already the JSON { original, traducao } requested in responseSchema.
         using var inner = JsonDocument.Parse(text);
         var obj = inner.RootElement;
         string original = obj.TryGetProperty("original", out var o) ? o.GetString() ?? "" : "";
@@ -108,7 +108,7 @@ public sealed class GeminiClient
                 err.TryGetProperty("message", out var msg))
                 return msg.GetString() ?? json;
         }
-        catch { /* mantém o corpo cru */ }
+        catch { /* keep the raw body */ }
         return json;
     }
 }

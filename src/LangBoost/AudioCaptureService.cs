@@ -4,9 +4,9 @@ using NAudio.Wave;
 namespace LangBoost;
 
 /// <summary>
-/// Captura todo o áudio que sai pelo dispositivo de reprodução padrão (WASAPI loopback)
-/// e o mantém num buffer circular dos últimos N segundos. A reprodução continua normal;
-/// funciona inclusive com conteúdo DRM (Netflix), pois o DRM afeta o vídeo, não o áudio.
+/// Captures all audio coming out of the default playback device (WASAPI loopback)
+/// and keeps it in a circular buffer of the last N seconds. Playback continues normally;
+/// it works even with DRM content (Netflix), since DRM affects the video, not the audio.
 /// </summary>
 public sealed class AudioCaptureService : IDisposable
 {
@@ -28,12 +28,12 @@ public sealed class AudioCaptureService : IDisposable
 
     public void Start() => _capture.StartRecording();
 
-    /// <summary>Retorna os últimos segundos de áudio bruto no formato nativo da captura.</summary>
+    /// <summary>Returns the last seconds of raw audio in the capture's native format.</summary>
     public byte[] Snapshot() => _buffer.Snapshot();
 
     public void Dispose()
     {
-        try { _capture.StopRecording(); } catch { /* ignora */ }
+        try { _capture.StopRecording(); } catch { /* ignore */ }
         _capture.DataAvailable -= OnDataAvailable;
         _capture.Dispose();
     }

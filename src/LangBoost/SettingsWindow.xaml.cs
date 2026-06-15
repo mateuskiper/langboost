@@ -3,9 +3,9 @@ using System.Windows;
 namespace LangBoost;
 
 /// <summary>
-/// Janela de configurações (separada do overlay porque o overlay usa WS_EX_NOACTIVATE e
-/// não recebe foco de teclado). Permite definir a chave do Gemini e o tamanho do buffer.
-/// Aplica as mudanças no <see cref="AppConfig"/> recebido e o persiste ao salvar.
+/// Settings window (separate from the overlay because the overlay uses WS_EX_NOACTIVATE and
+/// does not receive keyboard focus). Lets you set the Gemini key and the buffer length.
+/// Applies the changes to the received <see cref="AppConfig"/> and persists it on save.
 /// </summary>
 public partial class SettingsWindow : Window
 {
@@ -32,7 +32,7 @@ public partial class SettingsWindow : Window
     private void UpdateBufferLabel(int seconds)
     {
         if (BufferLabel is not null)
-            BufferLabel.Text = $"Tempo de áudio (buffer): {seconds} s";
+            BufferLabel.Text = $"Audio buffer: {seconds} s";
     }
 
     private void OnSave(object sender, RoutedEventArgs e)

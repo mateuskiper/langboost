@@ -1,9 +1,9 @@
 namespace LangBoost;
 
 /// <summary>
-/// Buffer circular thread-safe que mantém apenas os bytes de áudio mais recentes
-/// (os últimos N segundos). A thread de captura escreve continuamente; quando o
-/// buffer enche, os bytes mais antigos são sobrescritos.
+/// Thread-safe circular buffer that keeps only the most recent audio bytes
+/// (the last N seconds). The capture thread writes continuously; when the
+/// buffer fills up, the oldest bytes are overwritten.
 /// </summary>
 public sealed class AudioRingBuffer
 {
@@ -21,7 +21,7 @@ public sealed class AudioRingBuffer
     {
         lock (_lock)
         {
-            // Se o bloco for maior que o buffer, só os últimos bytes interessam.
+            // If the block is larger than the buffer, only the last bytes matter.
             if (count >= _buffer.Length)
             {
                 Array.Copy(data, offset + count - _buffer.Length, _buffer, 0, _buffer.Length);
@@ -52,7 +52,7 @@ public sealed class AudioRingBuffer
         }
     }
 
-    /// <summary>Copia o conteúdo atual em ordem cronológica (mais antigo → mais recente).</summary>
+    /// <summary>Copies the current content in chronological order (oldest → newest).</summary>
     public byte[] Snapshot()
     {
         lock (_lock)
@@ -65,7 +65,7 @@ public sealed class AudioRingBuffer
             }
 
             var result = new byte[_buffer.Length];
-            int tail = _buffer.Length - _writePos; // parte mais antiga
+            int tail = _buffer.Length - _writePos; // oldest part
             Array.Copy(_buffer, _writePos, result, 0, tail);
             Array.Copy(_buffer, 0, result, tail, _writePos);
             return result;

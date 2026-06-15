@@ -16,28 +16,28 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
-    private const double TrackWidth = 560;   // largura útil da trilha de recorte (px)
-    private const double ThumbHalf = 6;       // metade da largura da alça (px)
+    private const double TrackWidth = 560;   // usable width of the trim track (px)
+    private const double ThumbHalf = 6;       // half the handle width (px)
 
     private string _hotkeyText = "Ctrl+Shift+Space";
     private int _bufferSeconds = 5;
 
     private readonly DispatcherTimer _playTimer;
     private AudioPlayer? _player;
-    private double _startX;                    // posição (px) da alça de início
-    private double _endX = TrackWidth;         // posição (px) da alça de fim
-    private bool _trimming;                    // true quando o player de recorte está ativo
+    private double _startX;                    // position (px) of the start handle
+    private double _endX = TrackWidth;         // position (px) of the end handle
+    private bool _trimming;                    // true when the trim player is active
     private Button? _activePlayButton;
     private string _activePlayLabel = "";
     private TimeSpan _playStopAt;
 
-    /// <summary>Disparado ao clicar na engrenagem; o App abre as configurações.</summary>
+    /// <summary>Raised when the gear is clicked; the App opens the settings.</summary>
     public event Action? SettingsRequested;
-    /// <summary>Disparado ao clicar no X; o App encerra a aplicação.</summary>
+    /// <summary>Raised when the X is clicked; the App shuts the application down.</summary>
     public event Action? CloseRequested;
-    /// <summary>Disparado ao clicar em "Enviar"; informa o trecho [início, fim] a transcrever.</summary>
+    /// <summary>Raised when "Send" is clicked; reports the [start, end] clip to transcribe.</summary>
     public event Action<TimeSpan, TimeSpan>? SendRequested;
-    /// <summary>Disparado ao clicar em "Cancelar" no recorte.</summary>
+    /// <summary>Raised when "Cancel" is clicked in the trim view.</summary>
     public event Action? ReviewCancelled;
 
     public OverlayWindow()
@@ -54,13 +54,13 @@ public partial class OverlayWindow : Window
         ShowIdle();
     }
 
-    /// <summary>Atualiza o tamanho do buffer exibido na dica do atalho.</summary>
+    /// <summary>Updates the buffer length shown in the hotkey hint.</summary>
     public void SetBufferSeconds(int seconds) => _bufferSeconds = seconds;
 
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        // Não rouba o foco do vídeo ao aparecer/interagir.
+        // Does not steal focus from the video when shown/interacted with.
         var hwnd = new WindowInteropHelper(this).Handle;
         int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
         SetWindowLong(hwnd, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE);
@@ -75,17 +75,17 @@ public partial class OverlayWindow : Window
         Top = area.Bottom - ActualHeight - 60;
     }
 
-    // ---- Estados do overlay --------------------------------------------------
+    // ---- Overlay states ------------------------------------------------------
 
-    /// <summary>Estado ocioso: apenas a dica do atalho.</summary>
+    /// <summary>Idle state: just the hotkey hint.</summary>
     public void ShowIdle()
     {
         HideDynamicRegions();
-        StatusText.Text = $"Pressione {_hotkeyText} para transcrever os últimos {_bufferSeconds}s";
+        StatusText.Text = $"Press {_hotkeyText} to transcribe the last {_bufferSeconds}s";
         Reposition();
     }
 
-    /// <summary>Mensagem de status (ex.: "Transcrevendo...", erro).</summary>
+    /// <summary>Status message (e.g. "Transcribing...", error).</summary>
     public void ShowStatus(string message)
     {
         HideDynamicRegions();
@@ -93,11 +93,11 @@ public partial class OverlayWindow : Window
         Reposition();
     }
 
-    /// <summary>Player de recorte: ouvir o clipe e selecionar o trecho a transcrever.</summary>
+    /// <summary>Trim player: listen to the clip and select the segment to transcribe.</summary>
     public void ShowReview(byte[] wav)
     {
         HideDynamicRegions();
-        StatusText.Text = "Ouça e recorte o trecho que deseja transcrever, depois clique em Enviar.";
+        StatusText.Text = "Listen and trim the clip you want to transcribe, then click Send.";
 
         ResetPlayer(wav);
         _trimming = true;
@@ -110,11 +110,11 @@ public partial class OverlayWindow : Window
         Reposition();
     }
 
-    /// <summary>Mostra a transcrição (EN), a tradução (PT) e um player do trecho enviado.</summary>
+    /// <summary>Shows the transcription (EN), the translation (PT) and a player of the sent clip.</summary>
     public void ShowResult(string original, string traducao, byte[] wav)
     {
         HideDynamicRegions();
-        StatusText.Text = "Transcrição (EN) · Tradução (PT)";
+        StatusText.Text = "Transcription (EN) · Translation (PT)";
 
         OriginalText.Text = original;
         OriginalText.Visibility = Visibility.Visible;
@@ -135,7 +135,7 @@ public partial class OverlayWindow : Window
         Reposition();
     }
 
-    /// <summary>Esconde tudo que é específico de um estado e para qualquer reprodução.</summary>
+    /// <summary>Hides everything specific to a state and stops any playback.</summary>
     private void HideDynamicRegions()
     {
         StopPlayback();
@@ -152,12 +152,12 @@ public partial class OverlayWindow : Window
 
     private void Reposition()
     {
-        // Recalcula a posição após a altura mudar (SizeToContent=Height).
+        // Recomputes the position after the height changes (SizeToContent=Height).
         Dispatcher.BeginInvoke(new Action(PositionBottomCenter),
             DispatcherPriority.Loaded);
     }
 
-    // ---- Reprodução ----------------------------------------------------------
+    // ---- Playback ------------------------------------------------------------
 
     private void ResetPlayer(byte[]? wav)
     {
@@ -173,7 +173,7 @@ public partial class OverlayWindow : Window
         _playStopAt = to;
         _activePlayButton = button;
         _activePlayLabel = idleLabel;
-        button.Content = "■ Parar";
+        button.Content = "■ Stop";
         if (_trimming) Playhead.Visibility = Visibility.Visible;
         _playTimer.Start();
     }
@@ -212,17 +212,17 @@ public partial class OverlayWindow : Window
     private void OnReviewPlayClick(object sender, RoutedEventArgs e)
     {
         if (_activePlayButton == ReviewPlayButton) StopPlayback();
-        else StartPlayback(SelectionStart, SelectionEnd, ReviewPlayButton, "▶ Tocar");
+        else StartPlayback(SelectionStart, SelectionEnd, ReviewPlayButton, "▶ Play");
     }
 
     private void OnResultPlayClick(object sender, RoutedEventArgs e)
     {
         if (_player is null) return;
         if (_activePlayButton == ResultPlayButton) StopPlayback();
-        else StartPlayback(TimeSpan.Zero, _player.Duration, ResultPlayButton, "▶ Ouvir áudio");
+        else StartPlayback(TimeSpan.Zero, _player.Duration, ResultPlayButton, "▶ Play audio");
     }
 
-    // ---- Recorte (alças) -----------------------------------------------------
+    // ---- Trim (handles) ------------------------------------------------------
 
     private TimeSpan ClipDuration => _player?.Duration ?? TimeSpan.Zero;
     private TimeSpan SelectionStart => XToTime(_startX);
@@ -265,14 +265,14 @@ public partial class OverlayWindow : Window
 
     private void UpdateTimeLabel(TimeSpan position)
     {
-        // No recorte mostramos a posição da seleção; o segundo número é a duração total.
+        // While trimming we show the selection position; the second number is the total duration.
         TimeSpan shown = _playTimer.IsEnabled ? position : SelectionStart;
-        TimeLabel.Text = $"{Fmt(shown)} / {Fmt(ClipDuration)}  ·  seleção {Fmt(SelectionStart)}–{Fmt(SelectionEnd)}";
+        TimeLabel.Text = $"{Fmt(shown)} / {Fmt(ClipDuration)}  ·  selection {Fmt(SelectionStart)}–{Fmt(SelectionEnd)}";
     }
 
     private static string Fmt(TimeSpan t) => t.ToString(@"mm\:ss\.f");
 
-    // ---- Botões --------------------------------------------------------------
+    // ---- Buttons -------------------------------------------------------------
 
     private void OnReviewSendClick(object sender, RoutedEventArgs e)
     {

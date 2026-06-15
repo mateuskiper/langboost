@@ -10,13 +10,13 @@ public partial class App : Application
     private AudioCaptureService? _capture;
     private GeminiClient? _gemini;
     private HotkeyManager? _hotkey;
-    private byte[]? _clipWav; // clipe capturado (WAV 16k mono) em revisão/recorte
+    private byte[]? _clipWav; // captured clip (WAV 16k mono) under review/trim
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        MediaFoundationApi.Startup(); // necessário para o resampler
+        MediaFoundationApi.Startup(); // required for the resampler
 
         _config = AppConfig.Load();
 
@@ -28,15 +28,15 @@ public partial class App : Application
         _overlay.SendRequested += OnSendForTranscription;
         _overlay.ReviewCancelled += () => _overlay.ShowIdle();
 
-        // O atalho depende do HWND da overlay e independe da chave/buffer: registra sempre.
-        // OnHotkeyTriggered já protege contra captura/gemini ausentes.
+        // The hotkey depends on the overlay HWND and is independent of the key/buffer: always register.
+        // OnHotkeyTriggered already guards against a missing capture/gemini.
         _hotkey = new HotkeyManager(_overlay, _config.Modifiers, _config.Key);
         _hotkey.Triggered += OnHotkeyTriggered;
 
         ApplyConfig();
     }
 
-    /// <summary>(Re)constrói o pipeline conforme a config atual. Sem chave, não captura.</summary>
+    /// <summary>(Re)builds the pipeline according to the current config. Without a key, it does not capture.</summary>
     private void ApplyConfig()
     {
         if (string.IsNullOrWhiteSpace(_config.ApiKey))
@@ -44,7 +44,7 @@ public partial class App : Application
             _gemini = null;
             StopCapture();
             _overlay.ShowStatus(
-                "GEMINI_API_KEY não configurada. Abra as configurações (⚙) para definir a chave.");
+                "GEMINI_API_KEY not configured. Open settings (⚙) to set the key.");
             return;
         }
 
@@ -56,7 +56,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            _overlay.ShowStatus("Falha ao iniciar a captura de áudio: " + ex.Message);
+            _overlay.ShowStatus("Failed to start audio capture: " + ex.Message);
             return;
         }
 
@@ -81,15 +81,15 @@ public partial class App : Application
     {
         var window = new SettingsWindow(_config) { Owner = _overlay };
         if (window.ShowDialog() == true)
-            ApplyConfig(); // aplica imediatamente a nova chave e/ou buffer
+            ApplyConfig(); // immediately applies the new key and/or buffer
     }
 
-    /// <summary>Atalho: congela o áudio capturado e abre o player de recorte para revisão.</summary>
+    /// <summary>Hotkey: freezes the captured audio and opens the trim player for review.</summary>
     private async void OnHotkeyTriggered()
     {
         if (_capture is null || _gemini is null) return;
 
-        _overlay.ShowStatus("Preparando áudio...");
+        _overlay.ShowStatus("Preparing audio...");
 
         try
         {
@@ -98,9 +98,9 @@ public partial class App : Application
 
             byte[] wav = await Task.Run(() => AudioFormatConverter.ToWav16kMono(raw, format));
 
-            if (wav.Length <= 44) // só o cabeçalho WAV: nada capturado ainda
+            if (wav.Length <= 44) // only the WAV header: nothing captured yet
             {
-                _overlay.ShowStatus("Nenhum áudio capturado ainda. Toque o vídeo e tente de novo.");
+                _overlay.ShowStatus("No audio captured yet. Play the video and try again.");
                 return;
             }
 
@@ -109,17 +109,17 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            _overlay.ShowStatus("Falha: " + ex.Message);
+            _overlay.ShowStatus("Failed: " + ex.Message);
         }
     }
 
-    /// <summary>Envia à transcrição apenas o trecho selecionado pelo usuário no player.</summary>
+    /// <summary>Sends to transcription only the segment the user selected in the player.</summary>
     private async void OnSendForTranscription(TimeSpan from, TimeSpan to)
     {
         if (_gemini is null || _clipWav is null) return;
 
         byte[] clip = _clipWav;
-        _overlay.ShowStatus("Transcrevendo o trecho selecionado...");
+        _overlay.ShowStatus("Transcribing the selected clip...");
 
         try
         {
@@ -130,13 +130,13 @@ public partial class App : Application
             });
 
             if (string.IsNullOrWhiteSpace(result.Original))
-                _overlay.ShowStatus("Nenhuma fala detectada no trecho selecionado.");
+                _overlay.ShowStatus("No speech detected in the selected clip.");
             else
                 _overlay.ShowResult(result.Original, result.Traducao, trimmed);
         }
         catch (Exception ex)
         {
-            _overlay.ShowStatus("Falha: " + ex.Message);
+            _overlay.ShowStatus("Failed: " + ex.Message);
         }
     }
 
@@ -144,7 +144,7 @@ public partial class App : Application
     {
         _hotkey?.Dispose();
         _capture?.Dispose();
-        try { MediaFoundationApi.Shutdown(); } catch { /* ignora */ }
+        try { MediaFoundationApi.Shutdown(); } catch { /* ignore */ }
         base.OnExit(e);
     }
 }

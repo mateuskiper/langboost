@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:LangBoost">
     <Application.Resources>
-        <!-- Botão base compartilhado pelo overlay e pelas configurações. -->
+        <!-- Base button shared by the overlay and the settings window. -->
         <Style x:Key="FlatButton" TargetType="Button">
             <Setter Property="Background" Value="#FF3A3A42"/>
             <Setter Property="Foreground" Value="White"/>

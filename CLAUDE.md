@@ -2,123 +2,125 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## O que é
+## What it is
 
-App de desktop WPF (Windows) para estudar idiomas. Mantém os últimos N segundos do áudio do
-sistema num buffer circular (N configurável, 1–10s, padrão 5); ao apertar **Ctrl+Shift+Space**,
-abre um **player de recorte** para o usuário ouvir e selecionar o trecho, que então é enviado ao
-Google Gemini — que **transcreve (EN) e traduz (PT) numa única chamada** — e o resultado aparece
-num overlay sempre visível, com um player para reouvir o trecho enviado. Botões no overlay
-permitem abrir **configurações** (⚙) e **encerrar** (✕). Todo o código fica em `src/LangBoost/`.
-Veja `README.md` para uso pelo usuário final.
+A WPF desktop app (Windows) for studying languages. It keeps the last N seconds of system audio in
+a circular buffer (N configurable, 1–10s, default 5); when you press **Ctrl+Shift+Space**, it opens
+a **trim player** so the user can listen and select the segment, which is then sent to Google Gemini
+— which **transcribes (EN) and translates (PT) in a single call** — and the result appears in an
+always-visible overlay, with a player to replay the segment that was sent. Buttons on the overlay
+allow opening **settings** (⚙) and **closing** (✕). All code lives in `src/LangBoost/`.
+See `README.md` for end-user usage.
 
-## Comandos
+## Commands
 
 ```powershell
 # Build
-dotnet build LangBoost.sln -c Debug      # ou -c Release
+dotnet build LangBoost.sln -c Debug      # or -c Release
 
-# Executar (precisa da chave no ambiente da sessão — veja "Chave" abaixo)
+# Run (needs the key in the session environment — see "Key" below)
 dotnet run --project src/LangBoost
 
-# Publicar versão durável (exe único self-contained, sem runtime instalado) em pasta fixa
+# Publish a durable version (single self-contained exe, no installed runtime) to a fixed folder
 dotnet publish src/LangBoost/LangBoost.csproj -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
   -p:IncludeNativeLibrariesForSelfExtract=true -o "$env:LOCALAPPDATA\Programs\LangBoost"
 ```
 
-- **Não há projeto de testes** nem linter configurado. Validação = `dotnet build` + execução manual.
-- Para validar a chave do Gemini sem gastar tokens:
+- **There is no test project** nor configured linter. Validation = `dotnet build` + manual run.
+- To validate the Gemini key without spending tokens:
   ```powershell
   Invoke-RestMethod "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=$env:GEMINI_API_KEY"
   ```
 
-## Chave de API (Gemini)
+## API key (Gemini)
 
-`AppConfig.Load()` resolve a chave nesta ordem: variável de ambiente
-`GEMINI_API_KEY` → `GOOGLE_API_KEY` → `%APPDATA%\LangBoost\config.json`. A env var tem precedência.
+`AppConfig.Load()` resolves the key in this order: environment variable
+`GEMINI_API_KEY` → `GOOGLE_API_KEY` → `%APPDATA%\LangBoost\config.json`. The env var takes precedence.
 
-A chave também pode ser definida **pela UI** (overlay → ⚙ → janela de configurações). `AppConfig.Save()`
-grava no `config.json` o campo **`apiKeyProtected`** — a chave **criptografada com DPAPI**
-(`DataProtectionScope.CurrentUser`), nunca em texto puro. Ainda lê o campo legado `apiKey` (texto
-puro) por compatibilidade. Como a env var tem precedência no `Load()`, a flag `AppConfig.ApiKeyFromEnv`
-avisa na UI quando editar a chave não terá efeito após reabrir (a env var venceria).
+The key can also be set **through the UI** (overlay → ⚙ → settings window). `AppConfig.Save()`
+writes the **`apiKeyProtected`** field to `config.json` — the key **encrypted with DPAPI**
+(`DataProtectionScope.CurrentUser`), never in plain text. It still reads the legacy `apiKey` field
+(plain text) for compatibility. Since the env var takes precedence in `Load()`, the
+`AppConfig.ApiKeyFromEnv` flag warns in the UI when editing the key will have no effect after
+reopening (the env var would win).
 
-**Gotcha recorrente:** `setx` só afeta terminais **novos**. Para rodar na sessão atual sem
-reabrir o terminal:
+**Recurring gotcha:** `setx` only affects **new** terminals. To run in the current session without
+reopening the terminal:
 ```powershell
 $env:GEMINI_API_KEY = [Environment]::GetEnvironmentVariable("GEMINI_API_KEY","User")
 dotnet run --project src/LangBoost
 ```
-Sem chave, o app sobe e o overlay mostra "GEMINI_API_KEY não configurada"; defina-a em ⚙ (sem
-chave o atalho não captura/transcreve, mas ⚙ e ✕ funcionam).
+Without a key, the app starts and the overlay shows "GEMINI_API_KEY not configured"; set it in ⚙
+(without a key the shortcut does not capture/transcribe, but ⚙ and ✕ work).
 
-## Arquitetura
+## Architecture
 
-Pipeline disparado pelo atalho global (orquestrado em `App.xaml.cs` → `OnStartup` /
+Pipeline triggered by the global hotkey (orchestrated in `App.xaml.cs` → `OnStartup` /
 `OnHotkeyTriggered` / `OnSendForTranscription`):
 
 ```
-WasapiLoopbackCapture (todo o áudio do sistema)
-  → AudioRingBuffer (últimos N segundos, sobrescreve o mais antigo)
-  → [atalho] Snapshot() → AudioFormatConverter.ToWav16kMono (WAV 16kHz mono PCM16)
-  → OverlayWindow.ShowReview(wav)  (player de recorte: ouvir + selecionar trecho)
-  → [Enviar] AudioFormatConverter.TrimWav(wav, ini, fim)  (recorta o trecho)
+WasapiLoopbackCapture (all system audio)
+  → AudioRingBuffer (last N seconds, overwrites the oldest)
+  → [hotkey] Snapshot() → AudioFormatConverter.ToWav16kMono (WAV 16kHz mono PCM16)
+  → OverlayWindow.ShowReview(wav)  (trim player: listen + select segment)
+  → [Send] AudioFormatConverter.TrimWav(wav, start, end)  (trims the segment)
   → GeminiClient (1 POST, responseSchema → JSON {original, traducao})
-  → OverlayWindow.ShowResult(orig, trad, trimmedWav)  (texto + player; até "Concluir")
+  → OverlayWindow.ShowResult(orig, trad, trimmedWav)  (text + player; until "Done")
 ```
 
-Mapa de responsabilidades:
+Responsibility map:
 
-| Arquivo | Papel |
+| File | Role |
 |---|---|
-| `App.xaml.cs` | Liga tudo; `OnHotkeyTriggered` prepara o WAV e abre o recorte; `OnSendForTranscription` recorta+chama o Gemini em `Task.Run`; `ApplyConfig`/`RestartCapture` reconstroem o pipeline ao salvar settings |
-| `AudioCaptureService.cs` | `WasapiLoopbackCapture`; grava no ring buffer no `DataAvailable` |
-| `AudioRingBuffer.cs` | Buffer circular thread-safe (lock); `Snapshot()` retorna em ordem cronológica |
-| `AudioFormatConverter.cs` | `MediaFoundationResampler` faz downmix+resample para WAV 16kHz mono; `TrimWav` recorta o intervalo selecionado |
-| `AudioPlayer.cs` | Reprodutor de WAV em memória (`WaveOutEvent`); usado pelos players de recorte e de resultado |
-| `GeminiClient.cs` | REST `generateContent`; áudio inline base64; parseia `{original, traducao}` |
-| `HotkeyManager.cs` | `RegisterHotKey`/`WM_HOTKEY` via `HwndSource` da overlay |
-| `OverlayWindow.xaml(.cs)` | Overlay borderless/topmost/semi-transparente; estados idle/status/**review (recorte)**/result; botões ⚙/✕; trilha de recorte com 2 alças e playhead |
-| `SettingsWindow.xaml(.cs)` | Janela **focável** (separada do overlay) para buffer (1–10s) e chave de API |
-| `AppConfig.cs` | Resolve chave/modelo/segundos; `Save()` persiste com a chave criptografada (DPAPI) |
+| `App.xaml.cs` | Wires everything together; `OnHotkeyTriggered` prepares the WAV and opens the trim view; `OnSendForTranscription` trims + calls Gemini in `Task.Run`; `ApplyConfig`/`RestartCapture` rebuild the pipeline when settings are saved |
+| `AudioCaptureService.cs` | `WasapiLoopbackCapture`; writes to the ring buffer on `DataAvailable` |
+| `AudioRingBuffer.cs` | Thread-safe circular buffer (lock); `Snapshot()` returns in chronological order |
+| `AudioFormatConverter.cs` | `MediaFoundationResampler` downmixes+resamples to WAV 16kHz mono; `TrimWav` trims the selected range |
+| `AudioPlayer.cs` | In-memory WAV player (`WaveOutEvent`); used by the trim and result players |
+| `GeminiClient.cs` | REST `generateContent`; inline base64 audio; parses `{original, traducao}` |
+| `HotkeyManager.cs` | `RegisterHotKey`/`WM_HOTKEY` via the overlay's `HwndSource` |
+| `OverlayWindow.xaml(.cs)` | Borderless/topmost/semi-transparent overlay; idle/status/**review (trim)**/result states; ⚙/✕ buttons; trim track with 2 handles and playhead |
+| `SettingsWindow.xaml(.cs)` | **Focusable** window (separate from the overlay) for buffer (1–10s) and API key |
+| `AppConfig.cs` | Resolves key/model/seconds; `Save()` persists with the key encrypted (DPAPI) |
 
-### Restrições não óbvias (não quebre)
+### Non-obvious constraints (don't break)
 
-- **`MediaFoundationApi.Startup()`** é chamado em `OnStartup` e é **obrigatório** para o
-  `MediaFoundationResampler` funcionar. `Shutdown()` em `OnExit`.
-- **O hotkey depende do HWND da janela**: só crie o `HotkeyManager` depois que a `OverlayWindow`
-  tem handle (após `Show()` / `OnSourceInitialized`). Antes disso `PresentationSource.FromVisual`
-  retorna null.
-- **`WS_EX_NOACTIVATE`** é aplicado em `OverlayWindow.OnSourceInitialized` para o overlay **não
-  roubar o foco** do vídeo. Mantenha ao mexer no estilo da janela.
-- **O overlay não recebe foco de teclado** (consequência do `WS_EX_NOACTIVATE`): cliques e arrastes
-  de mouse funcionam (botões, sliders, alças de recorte), mas **campos de texto não**. Por isso a
-  chave de API fica na `SettingsWindow` (janela normal, focável, aberta via `ShowDialog`), e nunca
-  no overlay.
-- **Trilha de recorte:** as posições das alças são em **pixels** sobre uma trilha de largura fixa
-  (`TrackWidth`), convertidas para tempo via `XToTime`/`TimeToX` usando `AudioPlayer.Duration`.
-  Um `DispatcherTimer` move o playhead e **para a reprodução ao fim da seleção** (`WaveOutEvent`
-  não tem "tocar até X"). Sempre pare a reprodução (`StopPlayback`) ao trocar de estado.
-- **DPAPI:** a chave criptografada (`apiKeyProtected`) só descriptografa no **mesmo usuário Windows**;
-  config copiado para outra máquina/usuário falha no `Unprotect` e é tratado como "sem chave".
-- **Captura TODO o áudio do sistema** (não só o navegador) — notificações entram no buffer. Migrar
-  para Process Loopback seria a evolução, mas exige P/Invoke de `ActivateAudioInterfaceAsync`.
-- O formato do `Snapshot()` é o **nativo da captura** (geralmente float 48kHz estéreo); sempre passe
-  `_capture.WaveFormat` ao `AudioFormatConverter`, nunca assuma o formato.
+- **`MediaFoundationApi.Startup()`** is called in `OnStartup` and is **mandatory** for the
+  `MediaFoundationResampler` to work. `Shutdown()` in `OnExit`.
+- **The hotkey depends on the window's HWND**: only create the `HotkeyManager` after the
+  `OverlayWindow` has a handle (after `Show()` / `OnSourceInitialized`). Before that
+  `PresentationSource.FromVisual` returns null.
+- **`WS_EX_NOACTIVATE`** is applied in `OverlayWindow.OnSourceInitialized` so the overlay **does not
+  steal focus** from the video. Keep it when touching the window style.
+- **The overlay does not receive keyboard focus** (a consequence of `WS_EX_NOACTIVATE`): mouse clicks
+  and drags work (buttons, sliders, trim handles), but **text fields do not**. That's why the API
+  key lives in the `SettingsWindow` (a normal, focusable window opened via `ShowDialog`), and never
+  in the overlay.
+- **Trim track:** handle positions are in **pixels** over a fixed-width track (`TrackWidth`),
+  converted to time via `XToTime`/`TimeToX` using `AudioPlayer.Duration`. A `DispatcherTimer` moves
+  the playhead and **stops playback at the end of the selection** (`WaveOutEvent` has no "play until
+  X"). Always stop playback (`StopPlayback`) when switching states.
+- **DPAPI:** the encrypted key (`apiKeyProtected`) only decrypts on the **same Windows user**; a
+  config copied to another machine/user fails on `Unprotect` and is treated as "no key".
+- **Captures ALL system audio** (not just the browser) — notifications enter the buffer. Migrating
+  to Process Loopback would be the evolution, but it requires P/Invoke of
+  `ActivateAudioInterfaceAsync`.
+- The format of `Snapshot()` is the **native capture format** (usually float 48kHz stereo); always
+  pass `_capture.WaveFormat` to `AudioFormatConverter`, never assume the format.
 
-### Gotcha de build
+### Build gotcha
 
-`dotnet build`/`run` falha ao copiar `LangBoost.exe` se uma instância estiver aberta (lock). Encerre antes:
+`dotnet build`/`run` fails to copy `LangBoost.exe` if an instance is open (lock). Close it first:
 ```powershell
 Get-Process LangBoost -ErrorAction SilentlyContinue | Stop-Process -Force
 ```
 
-O ícone do app é `src/LangBoost/app.ico` (referenciado por `<ApplicationIcon>` no `.csproj`);
-é um `.ico` multi-resolução gerado por script (System.Drawing), não desenhado à mão. A chave
-criptografada usa o pacote `System.Security.Cryptography.ProtectedData`.
+The app icon is `src/LangBoost/app.ico` (referenced by `<ApplicationIcon>` in the `.csproj`);
+it is a multi-resolution `.ico` generated by a script (System.Drawing), not hand-drawn. The
+encrypted key uses the `System.Security.Cryptography.ProtectedData` package.
 
-## Estilo
+## Style
 
-- Código e comentários em **português**; nomes de tipos/membros em inglês ou português conforme o
-  arquivo (siga o vizinho). Mantenha simples e funcional — evite abstrações que o escopo não exige.
+- Code and comments in **English**; type/member names follow the surrounding file. Keep it simple and
+  functional — avoid abstractions the scope does not require.
