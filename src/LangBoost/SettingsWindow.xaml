@@ -7,7 +7,7 @@
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen">
 
-    <Border CornerRadius="14" Padding="22,18" Background="#D91B1B1F">
+    <Border CornerRadius="14" Padding="22,18" Margin="22" Background="#D91B1B1F">
         <Border.Effect>
             <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
         </Border.Effect>

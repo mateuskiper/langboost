@@ -114,7 +114,7 @@ public partial class OverlayWindow : Window
     public void ShowResult(string original, string traducao, byte[] wav)
     {
         HideDynamicRegions();
-        StatusText.Text = "Transcription (EN) · Translation (PT)";
+        StatusText.Visibility = Visibility.Collapsed;
 
         OriginalText.Text = original;
         OriginalText.Visibility = Visibility.Visible;
@@ -141,6 +141,7 @@ public partial class OverlayWindow : Window
         StopPlayback();
         ResetPlayer(null);
 
+        StatusText.Visibility = Visibility.Visible;
         OriginalText.Visibility = Visibility.Collapsed;
         TranslationText.Visibility = Visibility.Collapsed;
         OriginalText.Text = "";
@@ -173,7 +174,7 @@ public partial class OverlayWindow : Window
         _playStopAt = to;
         _activePlayButton = button;
         _activePlayLabel = idleLabel;
-        button.Content = "■ Stop";
+        button.Content = "■";
         if (_trimming) Playhead.Visibility = Visibility.Visible;
         _playTimer.Start();
     }
@@ -212,14 +213,14 @@ public partial class OverlayWindow : Window
     private void OnReviewPlayClick(object sender, RoutedEventArgs e)
     {
         if (_activePlayButton == ReviewPlayButton) StopPlayback();
-        else StartPlayback(SelectionStart, SelectionEnd, ReviewPlayButton, "▶ Play");
+        else StartPlayback(SelectionStart, SelectionEnd, ReviewPlayButton, "▶");
     }
 
     private void OnResultPlayClick(object sender, RoutedEventArgs e)
     {
         if (_player is null) return;
         if (_activePlayButton == ResultPlayButton) StopPlayback();
-        else StartPlayback(TimeSpan.Zero, _player.Duration, ResultPlayButton, "▶ Play audio");
+        else StartPlayback(TimeSpan.Zero, _player.Duration, ResultPlayButton, "▶");
     }
 
     // ---- Trim (handles) ------------------------------------------------------
