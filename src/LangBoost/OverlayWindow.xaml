@@ -104,10 +104,10 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                        <Canvas x:Name="TrimTrack" Width="560" Height="46"
+                        <Canvas x:Name="TrimTrack" Width="460" Height="46"
                                 HorizontalAlignment="Left" Background="Transparent"
                                 MouseLeftButtonDown="OnTrackClick">
-                            <Border Width="560" Height="22" Canvas.Top="12"
+                            <Border Width="460" Height="22" Canvas.Top="12"
                                     CornerRadius="4" Background="{StaticResource TrackBrush}"/>
                             <Border x:Name="LeftDim" Height="22" Canvas.Top="12" Canvas.Left="0"
                                     Background="#73000000"/>
@@ -127,11 +127,11 @@
                                    DragDelta="OnEndThumbDrag"/>
                         </Canvas>
 
-                        <StackPanel VerticalAlignment="Center" Margin="14,0,0,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                            <Button Style="{StaticResource FlatButton}"
+                                    Content="Cancel" Margin="0,0,10,0" Click="OnReviewCancelClick"/>
                             <Button Style="{StaticResource PrimaryButton}"
                                     Content="Send" Click="OnReviewSendClick"/>
-                            <Button Style="{StaticResource FlatButton}"
-                                    Content="Cancel" Margin="0,8,0,0" Click="OnReviewCancelClick"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -148,8 +148,9 @@
                             Content="&#x2715;" ToolTip="Close" Click="OnCloseClick"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-                    <Button x:Name="AddButton" Style="{StaticResource OverlayIconButton}"
-                            Content="+" ToolTip="Add phrase" Visibility="Collapsed" Click="OnAddClick"/>
+                    <Button x:Name="AddButton" Style="{StaticResource FlatButton}"
+                            Content="Add" Margin="0,0,8,0" ToolTip="Add phrase"
+                            Visibility="Collapsed" Click="OnAddClick"/>
                     <Button x:Name="DoneButton" Style="{StaticResource PrimaryButton}"
                             Content="Done" Visibility="Collapsed" Click="OnDoneClick"/>
                 </StackPanel>

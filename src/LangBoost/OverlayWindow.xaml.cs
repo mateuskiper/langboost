@@ -16,7 +16,7 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
-    private const double TrackWidth = 560;   // usable width of the trim track (px)
+    private const double TrackWidth = 460;   // usable width of the trim track (px)
     private const double ThumbHalf = 6;       // half the handle width (px)
 
     private string _hotkeyText = "Ctrl+Shift+Space";
@@ -135,7 +135,7 @@ public partial class OverlayWindow : Window
         ResetPlayer(wav);
         _trimming = false;
         ResultPlayButton.Visibility = Visibility.Visible;
-        AddButton.Content = "+";
+        AddButton.Content = "Add";
         AddButton.IsEnabled = true;
         AddButton.Visibility = Visibility.Visible;
         DoneButton.Visibility = Visibility.Visible;
@@ -152,13 +152,13 @@ public partial class OverlayWindow : Window
     /// <summary>Brief visual confirmation that the current phrase was added.</summary>
     public void ConfirmPhraseAdded()
     {
-        AddButton.Content = "✓";
+        AddButton.Content = "Added ✓";
         AddButton.IsEnabled = false;
         var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
         t.Tick += (_, _) =>
         {
             t.Stop();
-            AddButton.Content = "+";
+            AddButton.Content = "Add";
             AddButton.IsEnabled = true;
         };
         t.Start();
