@@ -136,10 +136,15 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                <Button x:Name="PhrasesButton" Style="{StaticResource OverlayIconButton}"
+                        Width="Auto" MinWidth="34" Content="&#x2630;"
+                        ToolTip="Phrases" Click="OnPhrasesClick"/>
                 <Button Style="{StaticResource OverlayIconButton}"
                         Content="&#x2699;" ToolTip="Settings" Click="OnSettingsClick"/>
                 <Button Style="{StaticResource OverlayCloseButton}"
                         Content="&#x2715;" ToolTip="Close" Click="OnCloseClick"/>
+                <Button x:Name="AddButton" Style="{StaticResource FlatButton}"
+                        Content="Add" Margin="8,0,0,0" Visibility="Collapsed" Click="OnAddClick"/>
                 <Button x:Name="DoneButton" Style="{StaticResource PrimaryButton}"
                         Content="Done" Visibility="Collapsed" Click="OnDoneClick"/>
             </StackPanel>

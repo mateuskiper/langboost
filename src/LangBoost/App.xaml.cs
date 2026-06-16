@@ -11,6 +11,8 @@ public partial class App : Application
     private GeminiClient? _gemini;
     private HotkeyManager? _hotkey;
     private byte[]? _clipWav; // captured clip (WAV 16k mono) under review/trim
+    private readonly List<string> _phrases = new(); // curated English phrases (in memory until saved)
+    private string? _lastOriginal; // English text shown in the current result view
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -34,9 +36,11 @@ public partial class App : Application
         _overlay.Show();
         _overlay.SetHotkeyHint(_config.HotkeyText);
         _overlay.SettingsRequested += OnOpenSettings;
-        _overlay.CloseRequested += () => Shutdown();
+        _overlay.CloseRequested += OnCloseRequested;
         _overlay.SendRequested += OnSendForTranscription;
         _overlay.ReviewCancelled += () => _overlay.ShowIdle();
+        _overlay.AddPhraseRequested += OnAddPhrase;
+        _overlay.PhrasesRequested += OnOpenPhrases;
 
         // The hotkey depends on the overlay HWND and is independent of the key/buffer: always register.
         // OnHotkeyTriggered already guards against a missing capture/gemini.
@@ -94,6 +98,50 @@ public partial class App : Application
             ApplyConfig(); // immediately applies the new key and/or buffer
     }
 
+    /// <summary>"Add" on the result view: stores the current English phrase in memory.</summary>
+    private void OnAddPhrase()
+    {
+        if (string.IsNullOrWhiteSpace(_lastOriginal)) return;
+        _phrases.Add(_lastOriginal.Trim());
+        _overlay.SetPhraseCount(_phrases.Count);
+        _overlay.ConfirmPhraseAdded();
+    }
+
+    /// <summary>Opens the focusable editor; it edits _phrases in place and clears it once saved.</summary>
+    private void OnOpenPhrases()
+    {
+        var window = new PhrasesWindow(_phrases) { Owner = _overlay };
+        window.ShowDialog();
+        _overlay.SetPhraseCount(_phrases.Count);
+    }
+
+    /// <summary>Close (✕): warns about unsaved phrases before shutting down.</summary>
+    private void OnCloseRequested()
+    {
+        if (_phrases.Count == 0)
+        {
+            Shutdown();
+            return;
+        }
+
+        MessageBoxResult choice = MessageBox.Show(_overlay,
+            $"You have {_phrases.Count} unsaved phrase(s). Save them to a file before closing?",
+            "LangBoost", MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+
+        switch (choice)
+        {
+            case MessageBoxResult.Yes:
+                OnOpenPhrases();              // save (or not) in the editor
+                if (_phrases.Count == 0)      // saved → cleared → safe to exit
+                    Shutdown();
+                break;                        // still has phrases → stay open
+            case MessageBoxResult.No:
+                Shutdown();                   // discard
+                break;
+            // Cancel → keep running
+        }
+    }
+
     /// <summary>Hotkey: freezes the captured audio and opens the trim player for review.</summary>
     private async void OnHotkeyTriggered()
     {
@@ -142,7 +190,10 @@ public partial class App : Application
             if (string.IsNullOrWhiteSpace(result.Original))
                 _overlay.ShowStatus("No speech detected in the selected clip.");
             else
+            {
+                _lastOriginal = result.Original;
                 _overlay.ShowResult(result.Original, result.Traducao, trimmed);
+            }
         }
         catch (Exception ex)
         {

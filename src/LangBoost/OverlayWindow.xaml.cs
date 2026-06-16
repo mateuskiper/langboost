@@ -39,6 +39,10 @@ public partial class OverlayWindow : Window
     public event Action<TimeSpan, TimeSpan>? SendRequested;
     /// <summary>Raised when "Cancel" is clicked in the trim view.</summary>
     public event Action? ReviewCancelled;
+    /// <summary>Raised when "Add" is clicked in the result view; the App stores the current phrase.</summary>
+    public event Action? AddPhraseRequested;
+    /// <summary>Raised when the phrases (☰) button is clicked; the App opens the phrases editor.</summary>
+    public event Action? PhrasesRequested;
 
     public OverlayWindow()
     {
@@ -131,8 +135,33 @@ public partial class OverlayWindow : Window
         ResetPlayer(wav);
         _trimming = false;
         ResultPlayButton.Visibility = Visibility.Visible;
+        AddButton.Content = "Add";
+        AddButton.IsEnabled = true;
+        AddButton.Visibility = Visibility.Visible;
         DoneButton.Visibility = Visibility.Visible;
         Reposition();
+    }
+
+    /// <summary>Updates the phrases (☰) button with the in-memory count.</summary>
+    public void SetPhraseCount(int n)
+    {
+        PhrasesButton.Content = n > 0 ? $"☰ {n}" : "☰";
+        PhrasesButton.ToolTip = n > 0 ? $"Phrases ({n})" : "Phrases";
+    }
+
+    /// <summary>Brief visual confirmation that the current phrase was added.</summary>
+    public void ConfirmPhraseAdded()
+    {
+        AddButton.Content = "Added ✓";
+        AddButton.IsEnabled = false;
+        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+        t.Tick += (_, _) =>
+        {
+            t.Stop();
+            AddButton.Content = "Add";
+            AddButton.IsEnabled = true;
+        };
+        t.Start();
     }
 
     /// <summary>Hides everything specific to a state and stops any playback.</summary>
@@ -148,6 +177,7 @@ public partial class OverlayWindow : Window
         TranslationText.Text = "";
         ResultPlayButton.Visibility = Visibility.Collapsed;
         ReviewPanel.Visibility = Visibility.Collapsed;
+        AddButton.Visibility = Visibility.Collapsed;
         DoneButton.Visibility = Visibility.Collapsed;
     }
 
@@ -317,6 +347,10 @@ public partial class OverlayWindow : Window
     }
 
     private void OnDoneClick(object sender, RoutedEventArgs e) => ShowIdle();
+
+    private void OnAddClick(object sender, RoutedEventArgs e) => AddPhraseRequested?.Invoke();
+
+    private void OnPhrasesClick(object sender, RoutedEventArgs e) => PhrasesRequested?.Invoke();
 
     private void OnSettingsClick(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke();
 

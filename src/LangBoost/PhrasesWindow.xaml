@@ -1,0 +1,66 @@
+<Window x:Class="LangBoost.PhrasesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LangBoost · Phrases"
+        Width="560" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
+
+    <!-- Shadow on a dedicated background layer so the content (text) is not rasterised
+         through the Effect — see OverlayWindow.xaml for the rationale. -->
+    <Grid Margin="22">
+        <Border CornerRadius="14" Background="#D91B1B1F">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
+            </Border.Effect>
+        </Border>
+
+        <Border CornerRadius="14" Padding="22,18" Background="Transparent">
+        <StackPanel>
+            <TextBlock Text="Saved phrases" Style="{StaticResource TitleText}"/>
+            <TextBlock Style="{StaticResource CaptionText}" Margin="0,4,0,0"
+                       Text="Edit the English text, remove what you don't want, then save to a .jsonl file."/>
+
+            <TextBlock x:Name="EmptyText" Style="{StaticResource CaptionText}"
+                       Margin="0,16,0,0" Visibility="Collapsed"
+                       Text="No phrases yet. Transcribe a clip and click Add on the result."/>
+
+            <ScrollViewer MaxHeight="360" Margin="0,14,0,0"
+                          VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="Rows">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                         FontFamily="Segoe UI" FontSize="14" Padding="8,6"
+                                         Background="#E62A2A30" Foreground="White"
+                                         BorderBrush="#FF3A3A42" TextWrapping="Wrap"
+                                         VerticalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Style="{StaticResource OverlayCloseButton}"
+                                        Content="&#x2715;" ToolTip="Remove" Margin="8,0,0,0"
+                                        Click="OnDeleteRow"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Actions -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+                <Button Content="Close" Style="{StaticResource FlatButton}"
+                        Click="OnClose" Margin="0,0,10,0"/>
+                <Button x:Name="SaveButton" Content="Save to file…" Style="{StaticResource PrimaryButton}"
+                        Click="OnSave"/>
+            </StackPanel>
+        </StackPanel>
+        </Border>
+    </Grid>
+</Window>
