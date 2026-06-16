@@ -13,7 +13,7 @@ namespace LangBoost;
 public sealed class AppConfig
 {
     public string ApiKey { get; internal set; } = "";
-    public string Model { get; internal set; } = "gemini-2.5-flash";
+    public string Model { get; internal set; } = "gemini-3.5-flash";
     public int BufferSeconds { get; internal set; } = 5;
 
     /// <summary>True when the key came from an environment variable (takes precedence over the

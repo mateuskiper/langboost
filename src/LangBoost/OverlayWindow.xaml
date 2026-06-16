@@ -9,7 +9,11 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
         <!-- Draggable trim handle: rounded bar with a centre grip + hover. -->
@@ -55,12 +59,18 @@
     </Window.Resources>
 
     <!-- Margin gives the drop shadow room to render as a soft rounded glow instead of
-         being clipped by the window bounds into a rectangular halo. -->
-    <Border CornerRadius="14" Padding="18,14" Margin="22" Background="#CC1B1B1F" MouseLeftButtonDown="OnDragBar">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
-        </Border.Effect>
+         being clipped by the window bounds into a rectangular halo.
+         The shadow lives on a dedicated background layer with no children: applying an
+         Effect rasterises the whole subtree (and drops ClearType), so the text must NOT
+         sit under the effect — it goes in a separate, effect-free content layer on top. -->
+    <Grid Margin="22">
+        <Border CornerRadius="14" Background="#CC1B1B1F">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
+            </Border.Effect>
+        </Border>
 
+        <Border CornerRadius="14" Padding="18,14" Background="Transparent" MouseLeftButtonDown="OnDragBar">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -134,5 +144,6 @@
                         Content="Done" Visibility="Collapsed" Click="OnDoneClick"/>
             </StackPanel>
         </Grid>
-    </Border>
+        </Border>
+    </Grid>
 </Window>

@@ -43,7 +43,7 @@ dotnet publish src/LangBoost/LangBoost.csproj -c Release -r win-x64 --self-conta
   regression contract — make code changes pass them; never weaken a test to make a commit go through.
 - To validate the Gemini key without spending tokens:
   ```powershell
-  Invoke-RestMethod "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash" `
+  Invoke-RestMethod "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash" `
     -Headers @{ "x-goog-api-key" = $env:GEMINI_API_KEY }
   ```
 

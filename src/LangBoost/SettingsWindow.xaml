@@ -5,13 +5,21 @@
         Width="460" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
-    <Border CornerRadius="14" Padding="22,18" Margin="22" Background="#D91B1B1F">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
-        </Border.Effect>
+    <!-- Shadow on a dedicated background layer so the content (text) is not rasterised
+         through the Effect — see OverlayWindow.xaml for the rationale. -->
+    <Grid Margin="22">
+        <Border CornerRadius="14" Background="#D91B1B1F">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
+            </Border.Effect>
+        </Border>
 
+        <Border CornerRadius="14" Padding="22,18" Background="Transparent">
         <StackPanel>
             <TextBlock Text="Settings" Style="{StaticResource TitleText}"/>
 
@@ -45,5 +53,6 @@
                         Click="OnSave"/>
             </StackPanel>
         </StackPanel>
-    </Border>
+        </Border>
+    </Grid>
 </Window>
