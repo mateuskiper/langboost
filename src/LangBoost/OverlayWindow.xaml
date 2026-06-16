@@ -76,8 +76,12 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-            <StackPanel Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center">
+            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center">
                 <TextBlock x:Name="StatusText" Style="{StaticResource CaptionText}"
                            Text="Press Ctrl+Shift+Space to transcribe the last 5s"/>
 
@@ -92,52 +96,9 @@
                         Content="&#x25B6;" MinWidth="0" Width="44"
                         HorizontalAlignment="Left" Margin="0,10,0,0"
                         Visibility="Collapsed" Click="OnResultPlayClick"/>
-
-                <!-- Trim player: listen and select the clip to transcribe. -->
-                <StackPanel x:Name="ReviewPanel" Visibility="Collapsed" Margin="0,10,0,0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button x:Name="ReviewPlayButton" Style="{StaticResource FlatButton}"
-                                Content="&#x25B6;" MinWidth="0" Width="44" Click="OnReviewPlayClick"/>
-                        <TextBlock x:Name="TimeLabel" Style="{StaticResource CaptionText}"
-                                   VerticalAlignment="Center"
-                                   Margin="14,0,0,0" Text="00:00.0 / 00:00.0"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                        <Canvas x:Name="TrimTrack" Width="460" Height="46"
-                                HorizontalAlignment="Left" Background="Transparent"
-                                MouseLeftButtonDown="OnTrackClick">
-                            <Border Width="460" Height="22" Canvas.Top="12"
-                                    CornerRadius="4" Background="{StaticResource TrackBrush}"/>
-                            <Border x:Name="LeftDim" Height="22" Canvas.Top="12" Canvas.Left="0"
-                                    Background="#73000000"/>
-                            <Border x:Name="RightDim" Height="22" Canvas.Top="12"
-                                    Background="#73000000"/>
-                            <Thumb x:Name="SelectionBar" Height="22" Canvas.Top="12"
-                                   Style="{StaticResource SelectionThumb}"
-                                   DragDelta="OnSelectionDrag"/>
-                            <Rectangle x:Name="Playhead" Width="2" Height="46" Fill="White" Visibility="Collapsed">
-                                <Rectangle.Effect>
-                                    <DropShadowEffect BlurRadius="6" ShadowDepth="0" Opacity="0.9" Color="White"/>
-                                </Rectangle.Effect>
-                            </Rectangle>
-                            <Thumb x:Name="StartThumb" Style="{StaticResource TrimThumb}"
-                                   DragDelta="OnStartThumbDrag"/>
-                            <Thumb x:Name="EndThumb" Style="{StaticResource TrimThumb}"
-                                   DragDelta="OnEndThumbDrag"/>
-                        </Canvas>
-
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
-                            <Button Style="{StaticResource FlatButton}"
-                                    Content="Cancel" Margin="0,0,10,0" Click="OnReviewCancelClick"/>
-                            <Button Style="{StaticResource PrimaryButton}"
-                                    Content="Send" Click="OnReviewSendClick"/>
-                        </StackPanel>
-                    </StackPanel>
-                </StackPanel>
             </StackPanel>
 
-            <StackPanel Grid.Column="1" VerticalAlignment="Top">
+            <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Top">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button x:Name="PhrasesButton" Style="{StaticResource OverlayIconButton}"
                             Width="Auto" MinWidth="34" Content="&#x2630;"
@@ -153,6 +114,51 @@
                             Visibility="Collapsed" Click="OnAddClick"/>
                     <Button x:Name="DoneButton" Style="{StaticResource PrimaryButton}"
                             Content="Done" Visibility="Collapsed" Click="OnDoneClick"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Trim player: listen and select the clip to transcribe.
+                 Spans both columns so the buttons align with the overlay's right edge. -->
+            <StackPanel x:Name="ReviewPanel" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                        Visibility="Collapsed" Margin="0,12,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="ReviewPlayButton" Style="{StaticResource FlatButton}"
+                            Content="&#x25B6;" MinWidth="0" Width="44" Click="OnReviewPlayClick"/>
+                    <TextBlock x:Name="TimeLabel" Style="{StaticResource CaptionText}"
+                               VerticalAlignment="Center"
+                               Margin="14,0,0,0" Text="00:00.0 / 00:00.0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <Canvas x:Name="TrimTrack" Width="612" Height="46"
+                            HorizontalAlignment="Left" Background="Transparent"
+                            MouseLeftButtonDown="OnTrackClick">
+                        <Border Width="612" Height="22" Canvas.Top="12"
+                                CornerRadius="4" Background="{StaticResource TrackBrush}"/>
+                        <Border x:Name="LeftDim" Height="22" Canvas.Top="12" Canvas.Left="0"
+                                Background="#73000000"/>
+                        <Border x:Name="RightDim" Height="22" Canvas.Top="12"
+                                Background="#73000000"/>
+                        <Thumb x:Name="SelectionBar" Height="22" Canvas.Top="12"
+                               Style="{StaticResource SelectionThumb}"
+                               DragDelta="OnSelectionDrag"/>
+                        <Rectangle x:Name="Playhead" Width="2" Height="46" Fill="White" Visibility="Collapsed">
+                            <Rectangle.Effect>
+                                <DropShadowEffect BlurRadius="6" ShadowDepth="0" Opacity="0.9" Color="White"/>
+                            </Rectangle.Effect>
+                        </Rectangle>
+                        <Thumb x:Name="StartThumb" Style="{StaticResource TrimThumb}"
+                               DragDelta="OnStartThumbDrag"/>
+                        <Thumb x:Name="EndThumb" Style="{StaticResource TrimThumb}"
+                               DragDelta="OnEndThumbDrag"/>
+                    </Canvas>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                        <Button Style="{StaticResource FlatButton}"
+                                Content="Cancel" Margin="0,0,10,0" Click="OnReviewCancelClick"/>
+                        <Button Style="{StaticResource PrimaryButton}"
+                                Content="Send" Click="OnReviewSendClick"/>
+                    </StackPanel>
                 </StackPanel>
             </StackPanel>
         </Grid>

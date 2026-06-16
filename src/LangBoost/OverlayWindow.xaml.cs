@@ -16,7 +16,7 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
-    private const double TrackWidth = 460;   // usable width of the trim track (px)
+    private const double TrackWidth = 612;   // usable width of the trim track (px)
     private const double ThumbHalf = 6;       // half the handle width (px)
 
     private string _hotkeyText = "Ctrl+Shift+Space";
