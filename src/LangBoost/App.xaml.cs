@@ -14,6 +14,16 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // The WPF markup compiler emits the entry-point Main() without a call to
+        // App.InitializeComponent() on the current SDK, so App.xaml never loads and its
+        // Application.Resources stay empty (the FlatButton style would be missing, crashing
+        // every window that references it). Merge the shared styles explicitly instead.
+        if (!Resources.Contains("FlatButton"))
+            Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri("/LangBoost;component/styles.xaml", UriKind.Relative)
+            });
+
         base.OnStartup(e);
 
         MediaFoundationApi.Startup(); // required for the resampler
