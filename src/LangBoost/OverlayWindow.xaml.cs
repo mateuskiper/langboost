@@ -135,7 +135,7 @@ public partial class OverlayWindow : Window
         ResetPlayer(wav);
         _trimming = false;
         ResultPlayButton.Visibility = Visibility.Visible;
-        AddButton.Content = "Add";
+        AddButton.Content = "+";
         AddButton.IsEnabled = true;
         AddButton.Visibility = Visibility.Visible;
         DoneButton.Visibility = Visibility.Visible;
@@ -152,13 +152,13 @@ public partial class OverlayWindow : Window
     /// <summary>Brief visual confirmation that the current phrase was added.</summary>
     public void ConfirmPhraseAdded()
     {
-        AddButton.Content = "Added ✓";
+        AddButton.Content = "✓";
         AddButton.IsEnabled = false;
         var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
         t.Tick += (_, _) =>
         {
             t.Stop();
-            AddButton.Content = "Add";
+            AddButton.Content = "+";
             AddButton.IsEnabled = true;
         };
         t.Start();
