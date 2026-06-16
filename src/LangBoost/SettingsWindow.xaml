@@ -7,40 +7,41 @@
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen">
 
-    <Border CornerRadius="14" Padding="22,18" Background="#F21B1B1F">
+    <Border CornerRadius="14" Padding="22,18" Background="#D91B1B1F">
         <Border.Effect>
             <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
         </Border.Effect>
 
         <StackPanel>
-            <TextBlock Text="Settings" Foreground="White"
-                       FontFamily="Segoe UI" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Text="Settings" Style="{StaticResource TitleText}"/>
 
             <!-- API key -->
-            <TextBlock Text="Gemini API key" Foreground="#FF9AA0A6"
-                       FontFamily="Segoe UI" FontSize="13" Margin="0,16,0,4"/>
+            <TextBlock Text="Gemini API key" Style="{StaticResource CaptionText}" Margin="0,16,0,4"/>
             <PasswordBox x:Name="ApiKeyBox" FontFamily="Segoe UI" FontSize="14"
-                         Padding="8,6" Background="#FF2A2A30" Foreground="White"
+                         Padding="8,6" Background="#E62A2A30" Foreground="White"
                          BorderBrush="#FF3A3A42"/>
             <TextBlock x:Name="EnvWarning" Foreground="#FFE0B050"
-                       FontFamily="Segoe UI" FontSize="12" TextWrapping="Wrap"
+                       FontFamily="Segoe UI" FontSize="13" TextWrapping="Wrap"
                        Margin="0,6,0,0" Visibility="Collapsed"
                        Text="The GEMINI_API_KEY environment variable is set and takes precedence: the key saved here will only apply if the variable is removed."/>
 
             <!-- Buffer -->
-            <TextBlock x:Name="BufferLabel" Foreground="#FF9AA0A6"
-                       FontFamily="Segoe UI" FontSize="13" Margin="0,18,0,4"
-                       Text="Audio buffer: 5 s"/>
+            <TextBlock x:Name="BufferLabel" Style="{StaticResource CaptionText}"
+                       Margin="0,18,0,6" Text="Audio buffer: 5 s"/>
             <Slider x:Name="BufferSlider" Minimum="1" Maximum="10"
+                    Style="{StaticResource BufferSlider}"
                     IsSnapToTickEnabled="True" TickFrequency="1"
-                    TickPlacement="BottomRight"
                     ValueChanged="OnBufferChanged"/>
+            <Grid Margin="0,4,0,0">
+                <TextBlock Text="1s" Style="{StaticResource CaptionText}" HorizontalAlignment="Left"/>
+                <TextBlock Text="10s" Style="{StaticResource CaptionText}" HorizontalAlignment="Right"/>
+            </Grid>
 
             <!-- Actions -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
                 <Button Content="Cancel" Style="{StaticResource FlatButton}"
                         Click="OnCancel" Margin="0,0,10,0"/>
-                <Button Content="Save" Style="{StaticResource FlatButton}"
+                <Button Content="Save" Style="{StaticResource PrimaryButton}"
                         Click="OnSave"/>
             </StackPanel>
         </StackPanel>

@@ -260,7 +260,36 @@ public partial class OverlayWindow : Window
         Canvas.SetLeft(EndThumb, _endX - ThumbHalf);
         Canvas.SetLeft(SelectionBar, _startX);
         SelectionBar.Width = Math.Max(0, _endX - _startX);
+        // Dim the regions outside the selection so the chosen clip stands out.
+        LeftDim.Width = Math.Max(0, _startX);
+        Canvas.SetLeft(RightDim, _endX);
+        RightDim.Width = Math.Max(0, TrackWidth - _endX);
         UpdateTimeLabel(TimeSpan.Zero);
+    }
+
+    /// <summary>Click on the track moves the nearest handle to the clicked point.</summary>
+    private void OnTrackClick(object sender, MouseButtonEventArgs e)
+    {
+        // The selection region (SelectionBar thumb) handles its own drag; only
+        // clicks on the unselected track reach here.
+        StopPlayback();
+        double x = Math.Clamp(e.GetPosition(TrimTrack).X, 0, TrackWidth);
+        bool moveStart = Math.Abs(x - _startX) <= Math.Abs(x - _endX);
+        if (moveStart) _startX = Math.Clamp(x, 0, _endX - 4);
+        else _endX = Math.Clamp(x, _startX + 4, TrackWidth);
+        UpdateSelectionVisual();
+        e.Handled = true;
+    }
+
+    /// <summary>Drag the selection region to shift the whole [start, end] window.</summary>
+    private void OnSelectionDrag(object sender, DragDeltaEventArgs e)
+    {
+        StopPlayback();
+        double width = _endX - _startX;
+        double delta = Math.Clamp(e.HorizontalChange, -_startX, TrackWidth - _endX);
+        _startX += delta;
+        _endX = _startX + width;
+        UpdateSelectionVisual();
     }
 
     private void UpdateTimeLabel(TimeSpan position)
