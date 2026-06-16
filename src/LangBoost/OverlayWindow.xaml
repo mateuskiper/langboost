@@ -144,7 +144,7 @@
                 <Button Style="{StaticResource OverlayCloseButton}"
                         Content="&#x2715;" ToolTip="Close" Click="OnCloseClick"/>
                 <Button x:Name="AddButton" Style="{StaticResource FlatButton}"
-                        Content="Add" Margin="8,0,0,0" Visibility="Collapsed" Click="OnAddClick"/>
+                        Content="Add" Margin="8,0,8,0" Visibility="Collapsed" Click="OnAddClick"/>
                 <Button x:Name="DoneButton" Style="{StaticResource PrimaryButton}"
                         Content="Done" Visibility="Collapsed" Click="OnDoneClick"/>
             </StackPanel>
