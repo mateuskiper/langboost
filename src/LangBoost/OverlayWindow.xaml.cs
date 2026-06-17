@@ -43,6 +43,8 @@ public partial class OverlayWindow : Window
     public event Action? AddPhraseRequested;
     /// <summary>Raised when the phrases (☰) button is clicked; the App opens the phrases editor.</summary>
     public event Action? PhrasesRequested;
+    /// <summary>Raised when the idle "Capture" button is clicked; same action as the hotkey.</summary>
+    public event Action? CaptureRequested;
 
     public OverlayWindow()
     {
@@ -86,6 +88,8 @@ public partial class OverlayWindow : Window
     {
         HideDynamicRegions();
         StatusText.Text = $"Press {_hotkeyText} to transcribe the last {_bufferSeconds}s";
+        CaptureButton.Content = $"Capture last {_bufferSeconds}s";
+        CaptureButton.Visibility = Visibility.Visible;
         Reposition();
     }
 
@@ -179,6 +183,7 @@ public partial class OverlayWindow : Window
         ReviewPanel.Visibility = Visibility.Collapsed;
         AddButton.Visibility = Visibility.Collapsed;
         DoneButton.Visibility = Visibility.Collapsed;
+        CaptureButton.Visibility = Visibility.Collapsed;
     }
 
     private void Reposition()
@@ -351,6 +356,8 @@ public partial class OverlayWindow : Window
     private void OnAddClick(object sender, RoutedEventArgs e) => AddPhraseRequested?.Invoke();
 
     private void OnPhrasesClick(object sender, RoutedEventArgs e) => PhrasesRequested?.Invoke();
+
+    private void OnCaptureClick(object sender, RoutedEventArgs e) => CaptureRequested?.Invoke();
 
     private void OnSettingsClick(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke();
 

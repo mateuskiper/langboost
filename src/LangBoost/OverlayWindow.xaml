@@ -85,6 +85,11 @@
                 <TextBlock x:Name="StatusText" Style="{StaticResource CaptionText}"
                            Text="Press Ctrl+Shift+Space to transcribe the last 5s"/>
 
+                <!-- Idle-only: same action as the Ctrl+Shift+Space hotkey. -->
+                <Button x:Name="CaptureButton" Style="{StaticResource PrimaryButton}"
+                        Content="Capture" HorizontalAlignment="Left" Margin="0,12,0,0"
+                        Visibility="Collapsed" Click="OnCaptureClick"/>
+
                 <TextBlock x:Name="OriginalText" Style="{StaticResource PrimaryText}"
                            Margin="0,6,0,0" Visibility="Collapsed"/>
 

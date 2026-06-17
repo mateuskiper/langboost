@@ -41,6 +41,7 @@ public partial class App : Application
         _overlay.ReviewCancelled += () => _overlay.ShowIdle();
         _overlay.AddPhraseRequested += OnAddPhrase;
         _overlay.PhrasesRequested += OnOpenPhrases;
+        _overlay.CaptureRequested += OnHotkeyTriggered;
 
         // The hotkey depends on the overlay HWND and is independent of the key/buffer: always register.
         // OnHotkeyTriggered already guards against a missing capture/gemini.
