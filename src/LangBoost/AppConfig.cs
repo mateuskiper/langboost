@@ -8,7 +8,7 @@ namespace LangBoost;
 /// <summary>
 /// Simple configuration. The Gemini key comes from the GEMINI_API_KEY environment variable
 /// (precedence) or from the %APPDATA%\LangBoost\config.json file, where it is encrypted
-/// with DPAPI (current-user scope). The hotkey is fixed (Ctrl+Shift+Space).
+/// with DPAPI (current-user scope). The hotkey is fixed (Ctrl+Enter).
 /// </summary>
 public sealed class AppConfig
 {
@@ -20,9 +20,9 @@ public sealed class AppConfig
     /// file). In that case, editing the key through the UI has no effect after reopening the app.</summary>
     public bool ApiKeyFromEnv { get; private set; }
 
-    public uint Modifiers => HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_SHIFT;
-    public uint Key => 0x20; // VK_SPACE
-    public string HotkeyText => "Ctrl+Shift+Space";
+    public uint Modifiers => HotkeyManager.MOD_CONTROL;
+    public uint Key => 0x0D; // VK_RETURN
+    public string HotkeyText => "Ctrl+Enter";
 
     public static string ConfigPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

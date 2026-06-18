@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What it is
 
 A WPF desktop app (Windows) for studying languages. It keeps the last N seconds of system audio in
-a circular buffer (N configurable, 1–10s, default 5); when you press **Ctrl+Shift+Space**, it opens
+a circular buffer (N configurable, 1–10s, default 5); when you press **Ctrl+Enter**, it opens
 a **trim player** so the user can listen and select the segment, which is then sent to Google Gemini
 — which **transcribes (EN) and translates (PT) in a single call** — and the result appears in an
 always-visible overlay, with a player to replay the segment that was sent. Buttons on the overlay

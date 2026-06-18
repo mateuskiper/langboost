@@ -16,10 +16,22 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
+    // Enter accelerator for Send/Done. The overlay never gets keyboard focus
+    // (WS_EX_NOACTIVATE), so a normal KeyDown never fires; a global hotkey is the only way
+    // to react to Enter. It is registered only while the Review/Result state is showing and
+    // suspended while our own focusable dialogs are open (see Suspend/ResumeEnterShortcut).
+    private const int WM_HOTKEY = 0x0312;
+    private const int EnterHotkeyId = 0xB010;
+    private const uint MOD_NOREPEAT = 0x4000;
+    private const uint VK_RETURN = 0x0D;
+
+    [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
     private const double TrackWidth = 612;   // usable width of the trim track (px)
     private const double ThumbHalf = 6;       // half the handle width (px)
 
-    private string _hotkeyText = "Ctrl+Shift+Space";
+    private string _hotkeyText = "Ctrl+Enter";
     private int _bufferSeconds = 5;
 
     private readonly DispatcherTimer _playTimer;
@@ -30,6 +42,12 @@ public partial class OverlayWindow : Window
     private Button? _activePlayButton;
     private string _activePlayLabel = "";
     private TimeSpan _playStopAt;
+
+    private IntPtr _hwnd;
+    private HwndSource? _source;
+    private bool _enterRegistered;            // is the Enter hotkey currently registered
+    private int _enterSuspend;                // >0 while a focusable dialog suppresses it
+    private Action? _onEnter;                 // what Enter does in the current state (Send/Done)
 
     /// <summary>Raised when the gear is clicked; the App opens the settings.</summary>
     public event Action? SettingsRequested;
@@ -45,6 +63,8 @@ public partial class OverlayWindow : Window
     public event Action? PhrasesRequested;
     /// <summary>Raised when the idle "Capture" button is clicked; same action as the hotkey.</summary>
     public event Action? CaptureRequested;
+    /// <summary>Raised when "Done" is clicked on the result view; the App resumes the video.</summary>
+    public event Action? DoneRequested;
 
     public OverlayWindow()
     {
@@ -67,9 +87,59 @@ public partial class OverlayWindow : Window
     {
         base.OnSourceInitialized(e);
         // Does not steal focus from the video when shown/interacted with.
-        var hwnd = new WindowInteropHelper(this).Handle;
-        int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
-        SetWindowLong(hwnd, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE);
+        _hwnd = new WindowInteropHelper(this).Handle;
+        int ex = GetWindowLong(_hwnd, GWL_EXSTYLE);
+        SetWindowLong(_hwnd, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE);
+
+        _source = HwndSource.FromHwnd(_hwnd);
+        _source?.AddHook(WndProc);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        DisableEnter();
+        _source?.RemoveHook(WndProc);
+        base.OnClosed(e);
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_HOTKEY && wParam.ToInt32() == EnterHotkeyId)
+        {
+            _onEnter?.Invoke();
+            handled = true;
+        }
+        return IntPtr.Zero;
+    }
+
+    // ---- Enter accelerator ---------------------------------------------------
+
+    private void EnableEnter()
+    {
+        if (_enterRegistered || _enterSuspend > 0 || _hwnd == IntPtr.Zero) return;
+        _enterRegistered = RegisterHotKey(_hwnd, EnterHotkeyId, MOD_NOREPEAT, VK_RETURN);
+    }
+
+    private void DisableEnter()
+    {
+        if (!_enterRegistered) return;
+        UnregisterHotKey(_hwnd, EnterHotkeyId);
+        _enterRegistered = false;
+    }
+
+    /// <summary>Releases the Enter hotkey so a focusable dialog (Settings/Phrases/MessageBox)
+    /// can use Enter normally. Pair every call with <see cref="ResumeEnterShortcut"/>.</summary>
+    public void SuspendEnterShortcut()
+    {
+        _enterSuspend++;
+        DisableEnter();
+    }
+
+    /// <summary>Re-arms the Enter hotkey if the current state still wants it.</summary>
+    public void ResumeEnterShortcut()
+    {
+        if (_enterSuspend > 0) _enterSuspend--;
+        if (_enterSuspend == 0 && _onEnter is not null) EnableEnter();
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e) => PositionBottomCenter();
@@ -115,6 +185,8 @@ public partial class OverlayWindow : Window
         UpdateSelectionVisual();
         UpdateTimeLabel(TimeSpan.Zero);
         ReviewPanel.Visibility = Visibility.Visible;
+        _onEnter = SendSelection; // Enter = Send
+        EnableEnter();
         Reposition();
     }
 
@@ -143,6 +215,8 @@ public partial class OverlayWindow : Window
         AddButton.IsEnabled = true;
         AddButton.Visibility = Visibility.Visible;
         DoneButton.Visibility = Visibility.Visible;
+        _onEnter = Done; // Enter = Done
+        EnableEnter();
         Reposition();
     }
 
@@ -173,6 +247,9 @@ public partial class OverlayWindow : Window
     {
         StopPlayback();
         ResetPlayer(null);
+
+        _onEnter = null; // no Enter action outside Review/Result
+        DisableEnter();
 
         StatusText.Visibility = Visibility.Visible;
         OriginalText.Visibility = Visibility.Collapsed;
@@ -339,7 +416,9 @@ public partial class OverlayWindow : Window
 
     // ---- Buttons -------------------------------------------------------------
 
-    private void OnReviewSendClick(object sender, RoutedEventArgs e)
+    private void OnReviewSendClick(object sender, RoutedEventArgs e) => SendSelection();
+
+    private void SendSelection()
     {
         StopPlayback();
         SendRequested?.Invoke(SelectionStart, SelectionEnd);
@@ -351,7 +430,13 @@ public partial class OverlayWindow : Window
         ReviewCancelled?.Invoke();
     }
 
-    private void OnDoneClick(object sender, RoutedEventArgs e) => ShowIdle();
+    private void OnDoneClick(object sender, RoutedEventArgs e) => Done();
+
+    private void Done()
+    {
+        DoneRequested?.Invoke();
+        ShowIdle();
+    }
 
     private void OnAddClick(object sender, RoutedEventArgs e) => AddPhraseRequested?.Invoke();
 

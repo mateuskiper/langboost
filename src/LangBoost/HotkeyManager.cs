@@ -6,7 +6,7 @@ namespace LangBoost;
 
 /// <summary>
 /// Registers a global Windows hotkey (RegisterHotKey) that fires even with the
-/// browser focused or in full screen. Default: Ctrl+Shift+Space.
+/// browser focused or in full screen. Default: Ctrl+Enter.
 /// </summary>
 public sealed class HotkeyManager : IDisposable
 {

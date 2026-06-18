@@ -13,6 +13,7 @@ public partial class App : Application
     private byte[]? _clipWav; // captured clip (WAV 16k mono) under review/trim
     private readonly List<string> _phrases = new(); // curated English phrases (in memory until saved)
     private string? _lastOriginal; // English text shown in the current result view
+    private bool _videoPaused; // true while we paused the video for the capture→result flow
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -38,10 +39,11 @@ public partial class App : Application
         _overlay.SettingsRequested += OnOpenSettings;
         _overlay.CloseRequested += OnCloseRequested;
         _overlay.SendRequested += OnSendForTranscription;
-        _overlay.ReviewCancelled += () => _overlay.ShowIdle();
+        _overlay.ReviewCancelled += () => { ResumeVideo(); _overlay.ShowIdle(); };
         _overlay.AddPhraseRequested += OnAddPhrase;
         _overlay.PhrasesRequested += OnOpenPhrases;
         _overlay.CaptureRequested += OnHotkeyTriggered;
+        _overlay.DoneRequested += ResumeVideo;
 
         // The hotkey depends on the overlay HWND and is independent of the key/buffer: always register.
         // OnHotkeyTriggered already guards against a missing capture/gemini.
@@ -95,8 +97,13 @@ public partial class App : Application
     private void OnOpenSettings()
     {
         var window = new SettingsWindow(_config) { Owner = _overlay };
-        if (window.ShowDialog() == true)
-            ApplyConfig(); // immediately applies the new key and/or buffer
+        _overlay.SuspendEnterShortcut(); // let the dialog use Enter normally
+        try
+        {
+            if (window.ShowDialog() == true)
+                ApplyConfig(); // immediately applies the new key and/or buffer
+        }
+        finally { _overlay.ResumeEnterShortcut(); }
     }
 
     /// <summary>"Add" on the result view: stores the current English phrase in memory.</summary>
@@ -112,7 +119,9 @@ public partial class App : Application
     private void OnOpenPhrases()
     {
         var window = new PhrasesWindow(_phrases) { Owner = _overlay };
-        window.ShowDialog();
+        _overlay.SuspendEnterShortcut(); // the editor needs Enter for newlines
+        try { window.ShowDialog(); }
+        finally { _overlay.ResumeEnterShortcut(); }
         _overlay.SetPhraseCount(_phrases.Count);
     }
 
@@ -125,9 +134,15 @@ public partial class App : Application
             return;
         }
 
-        MessageBoxResult choice = MessageBox.Show(_overlay,
-            $"You have {_phrases.Count} unsaved phrase(s). Save them to a file before closing?",
-            "LangBoost", MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+        _overlay.SuspendEnterShortcut(); // let the message box handle Enter
+        MessageBoxResult choice;
+        try
+        {
+            choice = MessageBox.Show(_overlay,
+                $"You have {_phrases.Count} unsaved phrase(s). Save them to a file before closing?",
+                "LangBoost", MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+        }
+        finally { _overlay.ResumeEnterShortcut(); }
 
         switch (choice)
         {
@@ -143,11 +158,28 @@ public partial class App : Application
         }
     }
 
+    /// <summary>Toggles Space to pause the video, so it freezes while reviewing/transcribing.</summary>
+    private void PauseVideo()
+    {
+        if (_videoPaused) return;
+        MediaControl.TogglePlayPause();
+        _videoPaused = true;
+    }
+
+    /// <summary>Toggles Space to resume the video when the capture flow ends.</summary>
+    private void ResumeVideo()
+    {
+        if (!_videoPaused) return;
+        MediaControl.TogglePlayPause();
+        _videoPaused = false;
+    }
+
     /// <summary>Hotkey: freezes the captured audio and opens the trim player for review.</summary>
     private async void OnHotkeyTriggered()
     {
         if (_capture is null || _gemini is null) return;
 
+        PauseVideo(); // freeze the video at the captured moment
         _overlay.ShowStatus("Preparing audio...");
 
         try
@@ -159,6 +191,7 @@ public partial class App : Application
 
             if (wav.Length <= 44) // only the WAV header: nothing captured yet
             {
+                ResumeVideo();
                 _overlay.ShowStatus("No audio captured yet. Play the video and try again.");
                 return;
             }
@@ -168,6 +201,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            ResumeVideo();
             _overlay.ShowStatus("Failed: " + ex.Message);
         }
     }
@@ -189,7 +223,10 @@ public partial class App : Application
             });
 
             if (string.IsNullOrWhiteSpace(result.Original))
+            {
+                ResumeVideo();
                 _overlay.ShowStatus("No speech detected in the selected clip.");
+            }
             else
             {
                 _lastOriginal = result.Original;
@@ -198,6 +235,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            ResumeVideo();
             _overlay.ShowStatus("Failed: " + ex.Message);
         }
     }

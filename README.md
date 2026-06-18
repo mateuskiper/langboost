@@ -5,7 +5,7 @@
 
 A **Windows** desktop tool that helps you study languages while watching videos
 (YouTube, Netflix, etc.). It keeps the **last few seconds** of system audio in memory
-(1 to 10s, configurable — default 5). When you press **Ctrl+Shift+Space**, a **trim player**
+(1 to 10s, configurable — default 5). When you press **Ctrl+Enter**, a **trim player**
 appears so you can listen and select exactly the segment you want; when you click **Send**,
 the segment goes to Google Gemini, which **transcribes (English)** and **translates (Portuguese)**
 in a single call. The result appears in an always-visible overlay over the browser, with a **player
@@ -18,7 +18,7 @@ a **close (✕)** button.
 
 ```
 Browser plays video → WASAPI loopback (NAudio) → circular buffer of N seconds
-   (Ctrl+Shift+Space) → WAV 16 kHz mono → trim player (listen + select)
+   (Ctrl+Enter) → WAV 16 kHz mono → trim player (listen + select)
    (Send) → trimmed segment → Gemini → { English, Portuguese } → overlay (text + player)
 ```
 
@@ -76,7 +76,7 @@ dotnet run --project src/LangBoost
 **4. Use it:**
 1. On startup, the overlay appears at the bottom of the screen with the shortcut hint.
 2. Play a video in English.
-3. Press **Ctrl+Shift+Space**. The **trim player** opens with the last few captured seconds.
+3. Press **Ctrl+Enter**. The **trim player** opens with the last few captured seconds.
 4. Use **▶ Play** to listen and drag the **two handles** on the track to delimit the segment. Click
    **Send** to transcribe only the selection (or **Cancel** to discard it).
 5. Read the transcription (EN) and the translation (PT). Use **▶ Play audio** to replay the segment

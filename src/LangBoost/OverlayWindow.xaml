@@ -83,9 +83,9 @@
 
             <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center">
                 <TextBlock x:Name="StatusText" Style="{StaticResource CaptionText}"
-                           Text="Press Ctrl+Shift+Space to transcribe the last 5s"/>
+                           Text="Press Ctrl+Enter to transcribe the last 5s"/>
 
-                <!-- Idle-only: same action as the Ctrl+Shift+Space hotkey. -->
+                <!-- Idle-only: same action as the Ctrl+Enter hotkey. -->
                 <Button x:Name="CaptureButton" Style="{StaticResource PrimaryButton}"
                         Content="Capture" HorizontalAlignment="Left" Margin="0,12,0,0"
                         Visibility="Collapsed" Click="OnCaptureClick"/>
