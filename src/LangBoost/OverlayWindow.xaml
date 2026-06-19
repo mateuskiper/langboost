@@ -16,20 +16,16 @@
         TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
-        <!-- Draggable trim handle: rounded bar with a centre grip + hover. -->
+        <!-- Draggable trim handle: small rounded grip sized for the thin timeline. -->
         <Style x:Key="TrimThumb" TargetType="Thumb">
-            <Setter Property="Width" Value="14"/>
-            <Setter Property="Height" Value="46"/>
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="20"/>
             <Setter Property="Cursor" Value="SizeWE"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
                         <Border x:Name="Bd" CornerRadius="5" Background="{StaticResource AccentBrush}"
-                                BorderBrush="White" BorderThickness="1.5">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Rectangle Width="2" Height="14" Fill="#CCFFFFFF" RadiusX="1" RadiusY="1" Margin="0,0,0,0"/>
-                            </StackPanel>
-                        </Border>
+                                BorderBrush="White" BorderThickness="1.5"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
@@ -39,17 +35,16 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Selection region: drag to shift the whole [start,end] window. -->
+        <!-- Selection region: solid accent fill; drag to shift the whole [start,end] window. -->
         <Style x:Key="SelectionThumb" TargetType="Thumb">
             <Setter Property="Cursor" Value="ScrollAll"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
-                        <Border x:Name="Bd" Background="#804C8BF5"
-                                BorderBrush="{StaticResource AccentBrush}" BorderThickness="0,2,0,2"/>
+                        <Border x:Name="Bd" CornerRadius="3" Background="{StaticResource AccentBrush}"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#994C8BF5"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -64,13 +59,13 @@
          Effect rasterises the whole subtree (and drops ClearType), so the text must NOT
          sit under the effect — it goes in a separate, effect-free content layer on top. -->
     <Grid Margin="22">
-        <Border CornerRadius="14" Background="#CC1B1B1F">
+        <Border CornerRadius="18" Background="#E6131318">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
             </Border.Effect>
         </Border>
 
-        <Border CornerRadius="14" Padding="18,14" Background="Transparent" MouseLeftButtonDown="OnDragBar">
+        <Border CornerRadius="18" Padding="18,14" Background="Transparent" MouseLeftButtonDown="OnDragBar">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -82,13 +77,41 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center">
-                <TextBlock x:Name="StatusText" Style="{StaticResource CaptionText}"
-                           Text="Press Ctrl+Enter to transcribe the last 5s"/>
+                <!-- Status line: an indeterminate spinner (shown while busy) + the message.
+                     A Grid keeps the message wrapping in the remaining width; the spinner's
+                     Auto column collapses to zero when hidden. -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Canvas x:Name="Spinner" Grid.Column="0" Width="16" Height="16" Margin="0,0,10,0"
+                            VerticalAlignment="Center" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                        <Ellipse Width="16" Height="16" Stroke="#553A3A42" StrokeThickness="2"/>
+                        <Path Stroke="{StaticResource AccentBrush}" StrokeThickness="2"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M 8,1 A 7,7 0 0 1 15,8"/>
+                        <Canvas.RenderTransform>
+                            <RotateTransform x:Name="SpinnerRotate"/>
+                        </Canvas.RenderTransform>
+                    </Canvas>
+                    <TextBlock x:Name="StatusText" Grid.Column="1" Style="{StaticResource CaptionText}"
+                               VerticalAlignment="Center"
+                               Text="Press Ctrl+Enter to transcribe the last 5s"/>
+                </Grid>
 
-                <!-- Idle-only: same action as the Ctrl+Enter hotkey. -->
+                <!-- Idle-only: same action as the Ctrl+Enter hotkey. Aligned (no top margin) so
+                     it sits on the same line as the phrases/settings/close buttons. -->
                 <Button x:Name="CaptureButton" Style="{StaticResource PrimaryButton}"
-                        Content="Capture" HorizontalAlignment="Left" Margin="0,12,0,0"
-                        Visibility="Collapsed" Click="OnCaptureClick"/>
+                        HorizontalAlignment="Left" Margin="0"
+                        Visibility="Collapsed" Click="OnCaptureClick">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource ShortcutChip}">
+                            <TextBlock x:Name="CaptureChip" Style="{StaticResource ShortcutChipText}" Text="Ctrl+Enter"/>
+                        </Border>
+                        <TextBlock x:Name="CaptureLabel" VerticalAlignment="Center" Margin="10,0,0,0" Text="Capture"/>
+                    </StackPanel>
+                </Button>
 
                 <TextBlock x:Name="OriginalText" Style="{StaticResource PrimaryText}"
                            Margin="0,6,0,0" Visibility="Collapsed"/>
@@ -98,7 +121,7 @@
 
                 <!-- Result player: only play/stop the clip that was sent. -->
                 <Button x:Name="ResultPlayButton" Style="{StaticResource FlatButton}"
-                        Content="&#x25B6;" MinWidth="0" Width="44"
+                        Content="&#x1F50A;" FontFamily="Segoe UI Emoji" MinWidth="0" Width="44"
                         HorizontalAlignment="Left" Margin="0,10,0,0"
                         Visibility="Collapsed" Click="OnResultPlayClick"/>
             </StackPanel>
@@ -118,7 +141,14 @@
                             Content="Add" Margin="0,0,8,0" ToolTip="Add phrase"
                             Visibility="Collapsed" Click="OnAddClick"/>
                     <Button x:Name="DoneButton" Style="{StaticResource PrimaryButton}"
-                            Content="Done" Visibility="Collapsed" Click="OnDoneClick"/>
+                            Visibility="Collapsed" Click="OnDoneClick">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Style="{StaticResource ShortcutChip}">
+                                <TextBlock Style="{StaticResource ShortcutChipText}" Text="Enter"/>
+                            </Border>
+                            <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" Text="Done"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </StackPanel>
 
@@ -128,43 +158,58 @@
                         Visibility="Collapsed" Margin="0,12,0,0">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Button x:Name="ReviewPlayButton" Style="{StaticResource FlatButton}"
-                            Content="&#x25B6;" MinWidth="0" Width="44" Click="OnReviewPlayClick"/>
+                            Content="&#x1F50A;" FontFamily="Segoe UI Emoji" MinWidth="0" Width="44" Click="OnReviewPlayClick"/>
                     <TextBlock x:Name="TimeLabel" Style="{StaticResource CaptionText}"
                                VerticalAlignment="Center"
                                Margin="14,0,0,0" Text="00:00.0 / 00:00.0"/>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                    <Canvas x:Name="TrimTrack" Width="612" Height="46"
-                            HorizontalAlignment="Left" Background="Transparent"
-                            MouseLeftButtonDown="OnTrackClick">
-                        <Border Width="612" Height="22" Canvas.Top="12"
-                                CornerRadius="4" Background="{StaticResource TrackBrush}"/>
-                        <Border x:Name="LeftDim" Height="22" Canvas.Top="12" Canvas.Left="0"
-                                Background="#73000000"/>
-                        <Border x:Name="RightDim" Height="22" Canvas.Top="12"
-                                Background="#73000000"/>
-                        <Thumb x:Name="SelectionBar" Height="22" Canvas.Top="12"
+                <!-- Timeline + actions on one line: the thin track fills the remaining width
+                     (responsive; sized in code from TrimTrack.ActualWidth — see OnTrackSizeChanged),
+                     Cancel/Send sit in an Auto column on the right. -->
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Canvas x:Name="TrimTrack" Grid.Column="0" Height="24" VerticalAlignment="Center"
+                            Background="Transparent"
+                            MouseLeftButtonDown="OnTrackClick" SizeChanged="OnTrackSizeChanged">
+                        <Border x:Name="TrackBg" Height="6" Canvas.Top="9"
+                                CornerRadius="3" Background="{StaticResource TrackBrush}"/>
+                        <Border x:Name="LeftDim" Height="6" Canvas.Top="9" Canvas.Left="0"
+                                CornerRadius="3" Background="#73000000"/>
+                        <Border x:Name="RightDim" Height="6" Canvas.Top="9"
+                                CornerRadius="3" Background="#73000000"/>
+                        <Thumb x:Name="SelectionBar" Height="6" Canvas.Top="9"
                                Style="{StaticResource SelectionThumb}"
                                DragDelta="OnSelectionDrag"/>
-                        <Rectangle x:Name="Playhead" Width="2" Height="46" Fill="White" Visibility="Collapsed">
+                        <Rectangle x:Name="Playhead" Width="2" Height="24" Fill="White" Visibility="Collapsed">
                             <Rectangle.Effect>
                                 <DropShadowEffect BlurRadius="6" ShadowDepth="0" Opacity="0.9" Color="White"/>
                             </Rectangle.Effect>
                         </Rectangle>
-                        <Thumb x:Name="StartThumb" Style="{StaticResource TrimThumb}"
+                        <Thumb x:Name="StartThumb" Canvas.Top="2" Style="{StaticResource TrimThumb}"
                                DragDelta="OnStartThumbDrag"/>
-                        <Thumb x:Name="EndThumb" Style="{StaticResource TrimThumb}"
+                        <Thumb x:Name="EndThumb" Canvas.Top="2" Style="{StaticResource TrimThumb}"
                                DragDelta="OnEndThumbDrag"/>
                     </Canvas>
 
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                VerticalAlignment="Center" Margin="14,0,0,0">
                         <Button Style="{StaticResource FlatButton}"
                                 Content="Cancel" Margin="0,0,10,0" Click="OnReviewCancelClick"/>
-                        <Button Style="{StaticResource PrimaryButton}"
-                                Content="Send" Click="OnReviewSendClick"/>
+                        <Button Style="{StaticResource PrimaryButton}" Click="OnReviewSendClick">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource ShortcutChip}">
+                                    <TextBlock Style="{StaticResource ShortcutChipText}" Text="Enter"/>
+                                </Border>
+                                <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" Text="Send"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </StackPanel>
         </Grid>
         </Border>

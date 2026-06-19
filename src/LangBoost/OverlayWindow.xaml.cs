@@ -4,6 +4,8 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
 namespace LangBoost;
@@ -28,8 +30,8 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
     [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-    private const double TrackWidth = 612;   // usable width of the trim track (px)
-    private const double ThumbHalf = 6;       // half the handle width (px)
+    private double _trackWidth = 612;         // current usable width of the trim track (px); follows ActualWidth
+    private const double ThumbHalf = 5;       // half the handle width (px)
 
     private string _hotkeyText = "Ctrl+Enter";
     private int _bufferSeconds = 5;
@@ -37,7 +39,7 @@ public partial class OverlayWindow : Window
     private readonly DispatcherTimer _playTimer;
     private AudioPlayer? _player;
     private double _startX;                    // position (px) of the start handle
-    private double _endX = TrackWidth;         // position (px) of the end handle
+    private double _endX = 612;                // position (px) of the end handle (rescaled once the track is laid out)
     private bool _trimming;                    // true when the trim player is active
     private Button? _activePlayButton;
     private string _activePlayLabel = "";
@@ -153,21 +155,36 @@ public partial class OverlayWindow : Window
 
     // ---- Overlay states ------------------------------------------------------
 
-    /// <summary>Idle state: just the hotkey hint.</summary>
+    /// <summary>Idle state: just the capture button (it already shows the shortcut + intent).</summary>
     public void ShowIdle()
     {
         HideDynamicRegions();
-        StatusText.Text = $"Press {_hotkeyText} to transcribe the last {_bufferSeconds}s";
-        CaptureButton.Content = $"Capture last {_bufferSeconds}s";
+        StatusText.Visibility = Visibility.Collapsed;
+        CaptureChip.Text = _hotkeyText;
+        CaptureLabel.Text = $"Capture last {_bufferSeconds}s";
         CaptureButton.Visibility = Visibility.Visible;
         Reposition();
     }
 
-    /// <summary>Status message (e.g. "Transcribing...", error).</summary>
+    /// <summary>Status message (e.g. error). No spinner — use <see cref="ShowBusy"/> for work in progress.</summary>
     public void ShowStatus(string message)
     {
         HideDynamicRegions();
         StatusText.Text = message;
+        Reposition();
+    }
+
+    /// <summary>Status message with a spinning loader, for long-running work (capture/transcription).</summary>
+    public void ShowBusy(string message)
+    {
+        HideDynamicRegions();
+        StatusText.Text = message;
+        Spinner.Visibility = Visibility.Visible;
+        var spin = new DoubleAnimation(0, 360, TimeSpan.FromSeconds(0.9))
+        {
+            RepeatBehavior = RepeatBehavior.Forever
+        };
+        SpinnerRotate.BeginAnimation(RotateTransform.AngleProperty, spin);
         Reposition();
     }
 
@@ -180,7 +197,7 @@ public partial class OverlayWindow : Window
         ResetPlayer(wav);
         _trimming = true;
         _startX = 0;
-        _endX = TrackWidth;
+        _endX = _trackWidth;
         Playhead.Visibility = Visibility.Collapsed;
         UpdateSelectionVisual();
         UpdateTimeLabel(TimeSpan.Zero);
@@ -251,6 +268,8 @@ public partial class OverlayWindow : Window
         _onEnter = null; // no Enter action outside Review/Result
         DisableEnter();
 
+        SpinnerRotate.BeginAnimation(RotateTransform.AngleProperty, null);
+        Spinner.Visibility = Visibility.Collapsed;
         StatusText.Visibility = Visibility.Visible;
         OriginalText.Visibility = Visibility.Collapsed;
         TranslationText.Visibility = Visibility.Collapsed;
@@ -325,14 +344,14 @@ public partial class OverlayWindow : Window
     private void OnReviewPlayClick(object sender, RoutedEventArgs e)
     {
         if (_activePlayButton == ReviewPlayButton) StopPlayback();
-        else StartPlayback(SelectionStart, SelectionEnd, ReviewPlayButton, "▶");
+        else StartPlayback(SelectionStart, SelectionEnd, ReviewPlayButton, "\U0001F50A");
     }
 
     private void OnResultPlayClick(object sender, RoutedEventArgs e)
     {
         if (_player is null) return;
         if (_activePlayButton == ResultPlayButton) StopPlayback();
-        else StartPlayback(TimeSpan.Zero, _player.Duration, ResultPlayButton, "▶");
+        else StartPlayback(TimeSpan.Zero, _player.Duration, ResultPlayButton, "\U0001F50A");
     }
 
     // ---- Trim (handles) ------------------------------------------------------
@@ -344,13 +363,13 @@ public partial class OverlayWindow : Window
     private double TimeToX(TimeSpan t)
     {
         double total = ClipDuration.TotalSeconds;
-        return total <= 0 ? 0 : Math.Clamp(t.TotalSeconds / total * TrackWidth, 0, TrackWidth);
+        return total <= 0 ? 0 : Math.Clamp(t.TotalSeconds / total * _trackWidth, 0, _trackWidth);
     }
 
     private TimeSpan XToTime(double x)
     {
         double total = ClipDuration.TotalSeconds;
-        return TimeSpan.FromSeconds(Math.Clamp(x, 0, TrackWidth) / TrackWidth * total);
+        return TimeSpan.FromSeconds(Math.Clamp(x, 0, _trackWidth) / _trackWidth * total);
     }
 
     private void OnStartThumbDrag(object sender, DragDeltaEventArgs e)
@@ -363,8 +382,25 @@ public partial class OverlayWindow : Window
     private void OnEndThumbDrag(object sender, DragDeltaEventArgs e)
     {
         StopPlayback();
-        _endX = Math.Clamp(_endX + e.HorizontalChange, _startX + 4, TrackWidth);
+        _endX = Math.Clamp(_endX + e.HorizontalChange, _startX + 4, _trackWidth);
         UpdateSelectionVisual();
+    }
+
+    /// <summary>Keeps the timeline responsive: the track fills the overlay width, so when its
+    /// actual width changes we rescale the selection (kept in px) and resize the background bar.</summary>
+    private void OnTrackSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        double newW = e.NewSize.Width;
+        if (newW <= 0) return;
+        double oldW = _trackWidth;
+        if (oldW > 0 && Math.Abs(oldW - newW) > 0.5)
+        {
+            _startX = _startX / oldW * newW;
+            _endX = _endX / oldW * newW;
+        }
+        _trackWidth = newW;
+        TrackBg.Width = newW;
+        if (_trimming) UpdateSelectionVisual();
     }
 
     private void UpdateSelectionVisual()
@@ -376,7 +412,7 @@ public partial class OverlayWindow : Window
         // Dim the regions outside the selection so the chosen clip stands out.
         LeftDim.Width = Math.Max(0, _startX);
         Canvas.SetLeft(RightDim, _endX);
-        RightDim.Width = Math.Max(0, TrackWidth - _endX);
+        RightDim.Width = Math.Max(0, _trackWidth - _endX);
         UpdateTimeLabel(TimeSpan.Zero);
     }
 
@@ -386,10 +422,10 @@ public partial class OverlayWindow : Window
         // The selection region (SelectionBar thumb) handles its own drag; only
         // clicks on the unselected track reach here.
         StopPlayback();
-        double x = Math.Clamp(e.GetPosition(TrimTrack).X, 0, TrackWidth);
+        double x = Math.Clamp(e.GetPosition(TrimTrack).X, 0, _trackWidth);
         bool moveStart = Math.Abs(x - _startX) <= Math.Abs(x - _endX);
         if (moveStart) _startX = Math.Clamp(x, 0, _endX - 4);
-        else _endX = Math.Clamp(x, _startX + 4, TrackWidth);
+        else _endX = Math.Clamp(x, _startX + 4, _trackWidth);
         UpdateSelectionVisual();
         e.Handled = true;
     }
@@ -399,7 +435,7 @@ public partial class OverlayWindow : Window
     {
         StopPlayback();
         double width = _endX - _startX;
-        double delta = Math.Clamp(e.HorizontalChange, -_startX, TrackWidth - _endX);
+        double delta = Math.Clamp(e.HorizontalChange, -_startX, _trackWidth - _endX);
         _startX += delta;
         _endX = _startX + width;
         UpdateSelectionVisual();

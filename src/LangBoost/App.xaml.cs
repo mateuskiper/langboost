@@ -180,7 +180,7 @@ public partial class App : Application
         if (_capture is null || _gemini is null) return;
 
         PauseVideo(); // freeze the video at the captured moment
-        _overlay.ShowStatus("Preparing audio...");
+        _overlay.ShowBusy("Preparing audio...");
 
         try
         {
@@ -212,7 +212,7 @@ public partial class App : Application
         if (_gemini is null || _clipWav is null) return;
 
         byte[] clip = _clipWav;
-        _overlay.ShowStatus("Transcribing the selected clip...");
+        _overlay.ShowBusy("Transcribing the selected clip...");
 
         try
         {

@@ -13,13 +13,13 @@
     <!-- Shadow on a dedicated background layer so the content (text) is not rasterised
          through the Effect — see OverlayWindow.xaml for the rationale. -->
     <Grid Margin="22">
-        <Border CornerRadius="14" Background="#D91B1B1F">
+        <Border CornerRadius="18" Background="#E6131318">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6" Color="Black"/>
             </Border.Effect>
         </Border>
 
-        <Border CornerRadius="14" Padding="22,18" Background="Transparent">
+        <Border CornerRadius="18" Padding="22,18" Background="Transparent">
         <StackPanel>
             <TextBlock Text="Settings" Style="{StaticResource TitleText}"/>
 

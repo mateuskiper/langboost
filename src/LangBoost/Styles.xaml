@@ -10,9 +10,12 @@
     <SolidColorBrush x:Key="TextBrush"        Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="MutedBrush"       Color="#FF9AA0A6"/>
     <SolidColorBrush x:Key="TranslationBrush" Color="#FFB7E1FF"/>
-    <SolidColorBrush x:Key="SurfaceBrush"     Color="#FF3A3A42"/>
+    <SolidColorBrush x:Key="SurfaceBrush"     Color="#FF34343C"/>
     <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#FF45454F"/>
     <SolidColorBrush x:Key="TrackBrush"       Color="#E62A2A30"/>
+    <!-- Keyboard-shortcut chip embedded in primary buttons (e.g. "Ctrl+Enter"). -->
+    <SolidColorBrush x:Key="ChipBrush"        Color="#59000000"/>
+    <SolidColorBrush x:Key="ChipTextBrush"    Color="#E6FFFFFF"/>
 
     <!-- ============================================================= -->
     <!-- Typography  (scale: 13 / 14 / 17 / 20 / 22)                   -->
@@ -78,7 +81,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="8" Background="{TemplateBinding Background}"
+                    <Border x:Name="Bd" CornerRadius="10" Background="{TemplateBinding Background}"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
@@ -102,10 +105,23 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="8" Background="{TemplateBinding Background}"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
+                    <!-- Two layers: the Glow border carries the coloured drop shadow but has no
+                         content, so the effect never rasterises the label (ClearType stays crisp);
+                         the Bd border on top holds the background + text. Same trick the overlay
+                         panel uses for its shadow. -->
+                    <Grid>
+                        <Border x:Name="Glow" CornerRadius="10"
+                                Background="{TemplateBinding Background}">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.55"
+                                                  Color="#4C8BF5"/>
+                            </Border.Effect>
+                        </Border>
+                        <Border x:Name="Bd" CornerRadius="10" Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
@@ -133,7 +149,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="8" Background="{TemplateBinding Background}">
+                    <Border x:Name="Bd" CornerRadius="10" Background="{TemplateBinding Background}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -154,7 +170,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="8" Background="{TemplateBinding Background}">
+                    <Border x:Name="Bd" CornerRadius="10" Background="{TemplateBinding Background}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -168,6 +184,22 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- Keyboard-shortcut chip shown inside a primary button (e.g. "Ctrl+Enter"). -->
+    <Style x:Key="ShortcutChip" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource ChipBrush}"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="7,2"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="ShortcutChipText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="TextWrapping" Value="NoWrap"/>
+        <Setter Property="Foreground" Value="{StaticResource ChipTextBrush}"/>
     </Style>
 
     <!-- ============================================================= -->
