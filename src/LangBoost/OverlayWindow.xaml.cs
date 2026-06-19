@@ -45,6 +45,10 @@ public partial class OverlayWindow : Window
     private string _activePlayLabel = "";
     private TimeSpan _playStopAt;
 
+    private bool _userPositioned;             // true once the user has dragged the overlay
+    private double _anchorLeft;               // user-chosen Left
+    private double _anchorBottom;             // user-chosen bottom edge (Top + ActualHeight)
+
     private IntPtr _hwnd;
     private HwndSource? _source;
     private bool _enterRegistered;            // is the Enter hotkey currently registered
@@ -149,6 +153,15 @@ public partial class OverlayWindow : Window
     private void PositionBottomCenter()
     {
         var area = SystemParameters.WorkArea;
+        if (_userPositioned)
+        {
+            // Keep the user's spot, anchored by the bottom edge so it grows upward as the
+            // content height changes (same feel as the default). Clamp to the work area so a
+            // height change near a screen edge can't push it off-screen.
+            Left = Math.Clamp(_anchorLeft, area.Left, Math.Max(area.Left, area.Right - ActualWidth));
+            Top = Math.Clamp(_anchorBottom - ActualHeight, area.Top, Math.Max(area.Top, area.Bottom - ActualHeight));
+            return;
+        }
         Left = area.Left + (area.Width - ActualWidth) / 2;
         Top = area.Bottom - ActualHeight - 60;
     }
@@ -495,7 +508,10 @@ public partial class OverlayWindow : Window
 
     private void OnDragBar(object sender, MouseButtonEventArgs e)
     {
-        if (e.LeftButton == MouseButtonState.Pressed)
-            DragMove();
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+        DragMove(); // blocks until the mouse is released, so Left/Top are final afterward
+        _userPositioned = true;
+        _anchorLeft = Left;
+        _anchorBottom = Top + ActualHeight;
     }
 }
