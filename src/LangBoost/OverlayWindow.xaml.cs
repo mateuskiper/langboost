@@ -227,13 +227,20 @@ public partial class OverlayWindow : Window
 
         ResetPlayer(wav);
         _trimming = false;
-        ResultPlayButton.Visibility = Visibility.Visible;
         AddButton.Content = "Add";
         AddButton.IsEnabled = true;
-        AddButton.Visibility = Visibility.Visible;
-        DoneButton.Visibility = Visibility.Visible;
+        ResultActions.Visibility = Visibility.Visible;
         _onEnter = Done; // Enter = Done
         EnableEnter();
+        Reposition();
+    }
+
+    /// <summary>Dead-end notice (error / nothing detected) with an Ok button back to idle.</summary>
+    public void ShowNotice(string message)
+    {
+        HideDynamicRegions();
+        StatusText.Text = message;
+        OkButton.Visibility = Visibility.Visible;
         Reposition();
     }
 
@@ -275,11 +282,10 @@ public partial class OverlayWindow : Window
         TranslationText.Visibility = Visibility.Collapsed;
         OriginalText.Text = "";
         TranslationText.Text = "";
-        ResultPlayButton.Visibility = Visibility.Collapsed;
+        ResultActions.Visibility = Visibility.Collapsed;
         ReviewPanel.Visibility = Visibility.Collapsed;
-        AddButton.Visibility = Visibility.Collapsed;
-        DoneButton.Visibility = Visibility.Collapsed;
         CaptureButton.Visibility = Visibility.Collapsed;
+        OkButton.Visibility = Visibility.Collapsed;
     }
 
     private void Reposition()
@@ -479,6 +485,9 @@ public partial class OverlayWindow : Window
     private void OnPhrasesClick(object sender, RoutedEventArgs e) => PhrasesRequested?.Invoke();
 
     private void OnCaptureClick(object sender, RoutedEventArgs e) => CaptureRequested?.Invoke();
+
+    // The video was already resumed before a notice is shown, so Ok just returns to idle.
+    private void OnOkClick(object sender, RoutedEventArgs e) => ShowIdle();
 
     private void OnSettingsClick(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke();
 

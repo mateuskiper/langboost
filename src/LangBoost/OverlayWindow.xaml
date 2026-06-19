@@ -113,35 +113,47 @@
                     </StackPanel>
                 </Button>
 
+                <!-- Notice-only: dismisses a dead-end message (error / nothing detected) back to idle. -->
+                <Button x:Name="OkButton" Style="{StaticResource PrimaryButton}"
+                        Content="Ok" HorizontalAlignment="Left" Margin="0,12,0,0"
+                        Visibility="Collapsed" Click="OnOkClick"/>
+
                 <TextBlock x:Name="OriginalText" Style="{StaticResource PrimaryText}"
                            Margin="0,6,0,0" Visibility="Collapsed"/>
 
                 <TextBlock x:Name="TranslationText" Style="{StaticResource SecondaryText}"
                            Margin="0,4,0,0" Visibility="Collapsed"/>
-
-                <!-- Result player: only play/stop the clip that was sent. -->
-                <Button x:Name="ResultPlayButton" Style="{StaticResource FlatButton}"
-                        Content="&#x1F50A;" FontFamily="Segoe UI Emoji" MinWidth="0" Width="44"
-                        HorizontalAlignment="Left" Margin="0,10,0,0"
-                        Visibility="Collapsed" Click="OnResultPlayClick"/>
             </StackPanel>
 
-            <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Top">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="PhrasesButton" Style="{StaticResource OverlayIconButton}"
-                            Width="Auto" MinWidth="34" Content="&#x2630;"
-                            ToolTip="Phrases" Click="OnPhrasesClick"/>
-                    <Button Style="{StaticResource OverlayIconButton}"
-                            Content="&#x2699;" ToolTip="Settings" Click="OnSettingsClick"/>
-                    <Button Style="{StaticResource OverlayCloseButton}"
-                            Content="&#x2715;" ToolTip="Close" Click="OnCloseClick"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Top"
+                        Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="PhrasesButton" Style="{StaticResource OverlayIconButton}"
+                        Width="Auto" MinWidth="34" Content="&#x2630;"
+                        ToolTip="Phrases" Click="OnPhrasesClick"/>
+                <Button Style="{StaticResource OverlayIconButton}"
+                        Content="&#x2699;" ToolTip="Settings" Click="OnSettingsClick"/>
+                <Button Style="{StaticResource OverlayCloseButton}"
+                        Content="&#x2715;" ToolTip="Close" Click="OnCloseClick"/>
+            </StackPanel>
+
+            <!-- Result actions: replay (left) + Add/Done (right) on one line, spanning both
+                 columns so each keeps its horizontal edge. Shares Row 1 with ReviewPanel
+                 (mutually exclusive states). -->
+            <Grid x:Name="ResultActions" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                  Visibility="Collapsed" Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="ResultPlayButton" Grid.Column="0" Style="{StaticResource FlatButton}"
+                        Content="&#x1F50A;" FontFamily="Segoe UI Emoji" MinWidth="0" Width="44"
+                        HorizontalAlignment="Left" VerticalAlignment="Center"
+                        Click="OnResultPlayClick"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button x:Name="AddButton" Style="{StaticResource FlatButton}"
-                            Content="Add" Margin="0,0,8,0" ToolTip="Add phrase"
-                            Visibility="Collapsed" Click="OnAddClick"/>
-                    <Button x:Name="DoneButton" Style="{StaticResource PrimaryButton}"
-                            Visibility="Collapsed" Click="OnDoneClick">
+                            Content="Add" Margin="0,0,8,0" ToolTip="Add phrase" Click="OnAddClick"/>
+                    <Button x:Name="DoneButton" Style="{StaticResource PrimaryButton}" Click="OnDoneClick">
                         <StackPanel Orientation="Horizontal">
                             <Border Style="{StaticResource ShortcutChip}">
                                 <TextBlock Style="{StaticResource ShortcutChipText}" Text="Enter"/>
@@ -150,7 +162,7 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
-            </StackPanel>
+            </Grid>
 
             <!-- Trim player: listen and select the clip to transcribe.
                  Spans both columns so the buttons align with the overlay's right edge. -->

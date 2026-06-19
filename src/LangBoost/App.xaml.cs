@@ -192,7 +192,7 @@ public partial class App : Application
             if (wav.Length <= 44) // only the WAV header: nothing captured yet
             {
                 ResumeVideo();
-                _overlay.ShowStatus("No audio captured yet. Play the video and try again.");
+                _overlay.ShowNotice("No audio captured yet. Play the video and try again.");
                 return;
             }
 
@@ -225,7 +225,7 @@ public partial class App : Application
             if (string.IsNullOrWhiteSpace(result.Original))
             {
                 ResumeVideo();
-                _overlay.ShowStatus("No speech detected in the selected clip.");
+                _overlay.ShowNotice("No speech detected in the selected clip.");
             }
             else
             {
@@ -236,7 +236,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             ResumeVideo();
-            _overlay.ShowStatus("Failed: " + ex.Message);
+            _overlay.ShowNotice("Failed: " + ex.Message);
         }
     }
 
