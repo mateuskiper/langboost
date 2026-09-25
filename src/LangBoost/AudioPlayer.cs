@@ -6,7 +6,7 @@ namespace LangBoost;
 /// <summary>
 /// Simple in-memory WAV clip player (uses NAudio's WaveOutEvent).
 /// Plays from a position; the caller decides when to stop (e.g. when reaching the end
-/// of the selection) by checking <see cref="CurrentTime"/> and <see cref="IsPlaying"/>.
+/// of the clip) by checking <see cref="CurrentTime"/> and <see cref="IsPlaying"/>.
 /// </summary>
 public sealed class AudioPlayer : IDisposable
 {

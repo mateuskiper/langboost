@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -18,9 +17,9 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
-    // Enter accelerator for Send/Done. The overlay never gets keyboard focus
+    // Enter accelerator for Done. The overlay never gets keyboard focus
     // (WS_EX_NOACTIVATE), so a normal KeyDown never fires; a global hotkey is the only way
-    // to react to Enter. It is registered only while the Review/Result state is showing and
+    // to react to Enter. It is registered only while the Result state is showing and
     // suspended while our own focusable dialogs are open (see Suspend/ResumeEnterShortcut).
     private const int WM_HOTKEY = 0x0312;
     private const int EnterHotkeyId = 0xB010;
@@ -30,17 +29,11 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
     [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-    private double _trackWidth = 612;         // current usable width of the trim track (px); follows ActualWidth
-    private const double ThumbHalf = 5;       // half the handle width (px)
-
     private string _hotkeyText = "Ctrl+Enter";
     private int _bufferSeconds = 5;
 
     private readonly DispatcherTimer _playTimer;
     private AudioPlayer? _player;
-    private double _startX;                    // position (px) of the start handle
-    private double _endX = 612;                // position (px) of the end handle (rescaled once the track is laid out)
-    private bool _trimming;                    // true when the trim player is active
     private Button? _activePlayButton;
     private string _activePlayLabel = "";
     private TimeSpan _playStopAt;
@@ -53,16 +46,12 @@ public partial class OverlayWindow : Window
     private HwndSource? _source;
     private bool _enterRegistered;            // is the Enter hotkey currently registered
     private int _enterSuspend;                // >0 while a focusable dialog suppresses it
-    private Action? _onEnter;                 // what Enter does in the current state (Send/Done)
+    private Action? _onEnter;                 // what Enter does in the current state (Done)
 
     /// <summary>Raised when the gear is clicked; the App opens the settings.</summary>
     public event Action? SettingsRequested;
     /// <summary>Raised when the X is clicked; the App shuts the application down.</summary>
     public event Action? CloseRequested;
-    /// <summary>Raised when "Send" is clicked; reports the [start, end] clip to transcribe.</summary>
-    public event Action<TimeSpan, TimeSpan>? SendRequested;
-    /// <summary>Raised when "Cancel" is clicked in the trim view.</summary>
-    public event Action? ReviewCancelled;
     /// <summary>Raised when "Add" is clicked in the result view; the App stores the current phrase.</summary>
     public event Action? AddPhraseRequested;
     /// <summary>Raised when the phrases (☰) button is clicked; the App opens the phrases editor.</summary>
@@ -201,25 +190,6 @@ public partial class OverlayWindow : Window
         Reposition();
     }
 
-    /// <summary>Trim player: listen to the clip and select the segment to transcribe.</summary>
-    public void ShowReview(byte[] wav)
-    {
-        HideDynamicRegions();
-        StatusText.Text = "Listen and trim the clip you want to transcribe, then click Send.";
-
-        ResetPlayer(wav);
-        _trimming = true;
-        _startX = 0;
-        _endX = _trackWidth;
-        Playhead.Visibility = Visibility.Collapsed;
-        UpdateSelectionVisual();
-        UpdateTimeLabel(TimeSpan.Zero);
-        ReviewPanel.Visibility = Visibility.Visible;
-        _onEnter = SendSelection; // Enter = Send
-        EnableEnter();
-        Reposition();
-    }
-
     /// <summary>Shows the transcription (EN), the translation (PT) and a player of the sent clip.</summary>
     public void ShowResult(string original, string traducao, byte[] wav)
     {
@@ -239,7 +209,6 @@ public partial class OverlayWindow : Window
         }
 
         ResetPlayer(wav);
-        _trimming = false;
         AddButton.Content = "Add";
         AddButton.IsEnabled = true;
         ResultActions.Visibility = Visibility.Visible;
@@ -285,7 +254,7 @@ public partial class OverlayWindow : Window
         StopPlayback();
         ResetPlayer(null);
 
-        _onEnter = null; // no Enter action outside Review/Result
+        _onEnter = null; // no Enter action outside the result view
         DisableEnter();
 
         SpinnerRotate.BeginAnimation(RotateTransform.AngleProperty, null);
@@ -296,7 +265,6 @@ public partial class OverlayWindow : Window
         OriginalText.Text = "";
         TranslationText.Text = "";
         ResultActions.Visibility = Visibility.Collapsed;
-        ReviewPanel.Visibility = Visibility.Collapsed;
         CaptureButton.Visibility = Visibility.Collapsed;
         OkButton.Visibility = Visibility.Collapsed;
     }
@@ -325,7 +293,6 @@ public partial class OverlayWindow : Window
         _activePlayButton = button;
         _activePlayLabel = idleLabel;
         button.Content = "■";
-        if (_trimming) Playhead.Visibility = Visibility.Visible;
         _playTimer.Start();
     }
 
@@ -338,32 +305,12 @@ public partial class OverlayWindow : Window
             _activePlayButton.Content = _activePlayLabel;
             _activePlayButton = null;
         }
-        if (_trimming)
-        {
-            Playhead.Visibility = Visibility.Collapsed;
-            UpdateTimeLabel(TimeSpan.Zero);
-        }
     }
 
     private void OnPlayTick(object? sender, EventArgs e)
     {
-        if (_player is null) { StopPlayback(); return; }
-
-        TimeSpan t = _player.CurrentTime;
-        if (_trimming)
-        {
-            UpdateTimeLabel(t);
-            Canvas.SetLeft(Playhead, TimeToX(t));
-        }
-
-        if (!_player.IsPlaying || t >= _playStopAt)
+        if (_player is null || !_player.IsPlaying || _player.CurrentTime >= _playStopAt)
             StopPlayback();
-    }
-
-    private void OnReviewPlayClick(object sender, RoutedEventArgs e)
-    {
-        if (_activePlayButton == ReviewPlayButton) StopPlayback();
-        else StartPlayback(SelectionStart, SelectionEnd, ReviewPlayButton, "\U0001F50A");
     }
 
     private void OnResultPlayClick(object sender, RoutedEventArgs e)
@@ -373,117 +320,7 @@ public partial class OverlayWindow : Window
         else StartPlayback(TimeSpan.Zero, _player.Duration, ResultPlayButton, "\U0001F50A");
     }
 
-    // ---- Trim (handles) ------------------------------------------------------
-
-    private TimeSpan ClipDuration => _player?.Duration ?? TimeSpan.Zero;
-    private TimeSpan SelectionStart => XToTime(_startX);
-    private TimeSpan SelectionEnd => XToTime(_endX);
-
-    private double TimeToX(TimeSpan t)
-    {
-        double total = ClipDuration.TotalSeconds;
-        return total <= 0 ? 0 : Math.Clamp(t.TotalSeconds / total * _trackWidth, 0, _trackWidth);
-    }
-
-    private TimeSpan XToTime(double x)
-    {
-        double total = ClipDuration.TotalSeconds;
-        return TimeSpan.FromSeconds(Math.Clamp(x, 0, _trackWidth) / _trackWidth * total);
-    }
-
-    private void OnStartThumbDrag(object sender, DragDeltaEventArgs e)
-    {
-        StopPlayback();
-        _startX = Math.Clamp(_startX + e.HorizontalChange, 0, _endX - 4);
-        UpdateSelectionVisual();
-    }
-
-    private void OnEndThumbDrag(object sender, DragDeltaEventArgs e)
-    {
-        StopPlayback();
-        _endX = Math.Clamp(_endX + e.HorizontalChange, _startX + 4, _trackWidth);
-        UpdateSelectionVisual();
-    }
-
-    /// <summary>Keeps the timeline responsive: the track fills the overlay width, so when its
-    /// actual width changes we rescale the selection (kept in px) and resize the background bar.</summary>
-    private void OnTrackSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        double newW = e.NewSize.Width;
-        if (newW <= 0) return;
-        double oldW = _trackWidth;
-        if (oldW > 0 && Math.Abs(oldW - newW) > 0.5)
-        {
-            _startX = _startX / oldW * newW;
-            _endX = _endX / oldW * newW;
-        }
-        _trackWidth = newW;
-        TrackBg.Width = newW;
-        if (_trimming) UpdateSelectionVisual();
-    }
-
-    private void UpdateSelectionVisual()
-    {
-        Canvas.SetLeft(StartThumb, _startX - ThumbHalf);
-        Canvas.SetLeft(EndThumb, _endX - ThumbHalf);
-        Canvas.SetLeft(SelectionBar, _startX);
-        SelectionBar.Width = Math.Max(0, _endX - _startX);
-        // Dim the regions outside the selection so the chosen clip stands out.
-        LeftDim.Width = Math.Max(0, _startX);
-        Canvas.SetLeft(RightDim, _endX);
-        RightDim.Width = Math.Max(0, _trackWidth - _endX);
-        UpdateTimeLabel(TimeSpan.Zero);
-    }
-
-    /// <summary>Click on the track moves the nearest handle to the clicked point.</summary>
-    private void OnTrackClick(object sender, MouseButtonEventArgs e)
-    {
-        // The selection region (SelectionBar thumb) handles its own drag; only
-        // clicks on the unselected track reach here.
-        StopPlayback();
-        double x = Math.Clamp(e.GetPosition(TrimTrack).X, 0, _trackWidth);
-        bool moveStart = Math.Abs(x - _startX) <= Math.Abs(x - _endX);
-        if (moveStart) _startX = Math.Clamp(x, 0, _endX - 4);
-        else _endX = Math.Clamp(x, _startX + 4, _trackWidth);
-        UpdateSelectionVisual();
-        e.Handled = true;
-    }
-
-    /// <summary>Drag the selection region to shift the whole [start, end] window.</summary>
-    private void OnSelectionDrag(object sender, DragDeltaEventArgs e)
-    {
-        StopPlayback();
-        double width = _endX - _startX;
-        double delta = Math.Clamp(e.HorizontalChange, -_startX, _trackWidth - _endX);
-        _startX += delta;
-        _endX = _startX + width;
-        UpdateSelectionVisual();
-    }
-
-    private void UpdateTimeLabel(TimeSpan position)
-    {
-        // While trimming we show the selection position; the second number is the total duration.
-        TimeSpan shown = _playTimer.IsEnabled ? position : SelectionStart;
-        TimeLabel.Text = $"{Fmt(shown)} / {Fmt(ClipDuration)}  ·  selection {Fmt(SelectionStart)}–{Fmt(SelectionEnd)}";
-    }
-
-    private static string Fmt(TimeSpan t) => t.ToString(@"mm\:ss\.f");
-
     // ---- Buttons -------------------------------------------------------------
-
-    private void OnReviewSendClick(object sender, RoutedEventArgs e) => SendSelection();
-
-    private void SendSelection()
-    {
-        StopPlayback();
-        SendRequested?.Invoke(SelectionStart, SelectionEnd);
-    }
-
-    private void OnReviewCancelClick(object sender, RoutedEventArgs e)
-    {
-        StopPlayback();
-        ReviewCancelled?.Invoke();
-    }
 
     private void OnDoneClick(object sender, RoutedEventArgs e) => Done();
 

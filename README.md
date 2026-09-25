@@ -1,15 +1,14 @@
 # LangBoost
 
-> Study languages by watching videos: capture the last few seconds of audio, listen and trim the
-> segment, and transcribe + translate with a keyboard shortcut.
+> Study languages by watching videos: capture the last few seconds of audio and
+> transcribe + translate them with a keyboard shortcut.
 
 A **Windows** desktop tool that helps you study languages while watching videos
 (YouTube, Netflix, etc.). It keeps the **last few seconds** of system audio in memory
-(1 to 10s, configurable — default 5). When you press **Ctrl+Enter**, a **trim player**
-appears so you can listen and select exactly the segment you want; when you click **Send**,
-the segment goes to Google Gemini, which **transcribes (English)** and **translates (Portuguese)**
+(1 to 10s, configurable — default 5). When you press **Ctrl+Enter** (or click **Capture**),
+the captured clip goes straight to Google Gemini, which **transcribes (English)** and **translates (Portuguese)**
 in a single call. The result appears in an always-visible overlay over the browser, with a **player
-to replay** the segment that was sent, and stays on screen until you click **Done**.
+to replay** the clip that was sent, and stays on screen until you click **Done**.
 
 The overlay also has a **settings (⚙)** button — to adjust the buffer length and the API key — and
 a **close (✕)** button.
@@ -18,8 +17,7 @@ a **close (✕)** button.
 
 ```
 Browser plays video → WASAPI loopback (NAudio) → circular buffer of N seconds
-   (Ctrl+Enter) → WAV 16 kHz mono → trim player (listen + select)
-   (Send) → trimmed segment → Gemini → { English, Portuguese } → overlay (text + player)
+   (Ctrl+Enter) → WAV 16 kHz mono → Gemini → { English, Portuguese } → overlay (text + player)
 ```
 
 - The audio keeps playing normally through the speakers (capture is via loopback).
@@ -76,12 +74,11 @@ dotnet run --project src/LangBoost
 **4. Use it:**
 1. On startup, the overlay appears at the bottom of the screen with the shortcut hint.
 2. Play a video in English.
-3. Press **Ctrl+Enter**. The **trim player** opens with the last few captured seconds.
-4. Use **▶ Play** to listen and drag the **two handles** on the track to delimit the segment. Click
-   **Send** to transcribe only the selection (or **Cancel** to discard it).
-5. Read the transcription (EN) and the translation (PT). Use **▶ Play audio** to replay the segment
-   that was sent. Click **Done** to clear it.
-6. Drag the overlay with the mouse to reposition it, if you like.
+3. Press **Ctrl+Enter** (or click **Capture last Ns**). The last few captured seconds are sent
+   for transcription right away.
+4. Read the transcription (EN) and the translation (PT). Use **🔊** to replay the clip that was
+   sent. Click **Done** (or press Enter) to clear it.
+5. Drag the overlay with the mouse to reposition it, if you like.
 
 > If the overlay shows *"GEMINI_API_KEY not configured"*, set the key in **⚙** (or see step 1).
 
@@ -129,17 +126,16 @@ Then just click the shortcut. The first time, set the key in **⚙**. To update,
 |---|---|
 | `AudioCaptureService.cs` | WASAPI loopback capture (NAudio) |
 | `AudioRingBuffer.cs` | Circular buffer of the last N seconds |
-| `AudioFormatConverter.cs` | Converts to WAV 16 kHz mono PCM16; trims the selected segment |
-| `AudioPlayer.cs` | Plays the in-memory audio (trim and result players) |
+| `AudioFormatConverter.cs` | Converts to WAV 16 kHz mono PCM16 |
+| `AudioPlayer.cs` | Plays the in-memory audio (result player) |
 | `GeminiClient.cs` | Transcription + translation in one call |
 | `HotkeyManager.cs` | Global hotkey (RegisterHotKey) |
-| `OverlayWindow.xaml(.cs)` | Always-visible overlay; trim and result players; ⚙/✕ buttons |
+| `OverlayWindow.xaml(.cs)` | Always-visible overlay; result player; ⚙/✕ buttons |
 | `SettingsWindow.xaml(.cs)` | Settings window (buffer and API key) |
 | `AppConfig.cs` | Key/model/seconds; saves the encrypted key (DPAPI) |
 | `App.xaml.cs` | Service orchestration |
 
 ## Cost and privacy
 
-Each submission sends to Google Gemini only the segment you selected in the trim player
-(at most the N seconds of the buffer), with per-use cost according to the chosen model. The audio
+Each submission sends to Google Gemini the last N seconds of the buffer, with per-use cost according to the chosen model. The audio
 leaves your machine for Google's service.

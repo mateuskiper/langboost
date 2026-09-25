@@ -10,7 +10,7 @@ public partial class App : Application
     private AudioCaptureService? _capture;
     private GeminiClient? _gemini;
     private HotkeyManager? _hotkey;
-    private byte[]? _clipWav; // captured clip (WAV 16k mono) under review/trim
+    private bool _busy; // true while a capture is being transcribed (ignores repeated hotkeys)
     private readonly List<string> _phrases = new(); // curated English phrases (in memory until saved)
     private string? _lastOriginal; // English text shown in the current result view
     private bool _videoPaused; // true while we paused the video for the capture→result flow
@@ -38,8 +38,6 @@ public partial class App : Application
         _overlay.SetHotkeyHint(_config.HotkeyText);
         _overlay.SettingsRequested += OnOpenSettings;
         _overlay.CloseRequested += OnCloseRequested;
-        _overlay.SendRequested += OnSendForTranscription;
-        _overlay.ReviewCancelled += () => { ResumeVideo(); _overlay.ShowIdle(); };
         _overlay.AddPhraseRequested += OnAddPhrase;
         _overlay.PhrasesRequested += OnOpenPhrases;
         _overlay.CaptureRequested += OnHotkeyTriggered;
@@ -158,7 +156,7 @@ public partial class App : Application
         }
     }
 
-    /// <summary>Toggles Space to pause the video, so it freezes while reviewing/transcribing.</summary>
+    /// <summary>Toggles Space to pause the video, so it freezes while transcribing/reading the result.</summary>
     private void PauseVideo()
     {
         if (_videoPaused) return;
@@ -174,18 +172,20 @@ public partial class App : Application
         _videoPaused = false;
     }
 
-    /// <summary>Hotkey: freezes the captured audio and opens the trim player for review.</summary>
+    /// <summary>Hotkey/Capture: sends the whole buffered clip to transcription and shows the result.</summary>
     private async void OnHotkeyTriggered()
     {
-        if (_capture is null || _gemini is null) return;
+        if (_capture is null || _gemini is null || _busy) return;
 
+        _busy = true;
         PauseVideo(); // freeze the video at the captured moment
-        _overlay.ShowBusy("Preparing audio...");
+        _overlay.ShowBusy("Transcribing the last clip...");
 
         try
         {
             byte[] raw = _capture.Snapshot();
             var format = _capture.WaveFormat;
+            GeminiClient gemini = _gemini;
 
             byte[] wav = await Task.Run(() => AudioFormatConverter.ToWav16kMono(raw, format));
 
@@ -196,41 +196,17 @@ public partial class App : Application
                 return;
             }
 
-            _clipWav = wav;
-            _overlay.ShowReview(wav);
-        }
-        catch (Exception ex)
-        {
-            ResumeVideo();
-            _overlay.ShowStatus("Failed: " + ex.Message);
-        }
-    }
-
-    /// <summary>Sends to transcription only the segment the user selected in the player.</summary>
-    private async void OnSendForTranscription(TimeSpan from, TimeSpan to)
-    {
-        if (_gemini is null || _clipWav is null) return;
-
-        byte[] clip = _clipWav;
-        _overlay.ShowBusy("Transcribing the selected clip...");
-
-        try
-        {
-            (byte[] trimmed, TranscriptionResult result) = await Task.Run(async () =>
-            {
-                byte[] t = AudioFormatConverter.TrimWav(clip, from, to);
-                return (t, await _gemini.TranscribeAndTranslateAsync(t));
-            });
+            TranscriptionResult result = await Task.Run(() => gemini.TranscribeAndTranslateAsync(wav));
 
             if (string.IsNullOrWhiteSpace(result.Original))
             {
                 ResumeVideo();
-                _overlay.ShowNotice("No speech detected in the selected clip.");
+                _overlay.ShowNotice("No speech detected in the captured clip.");
             }
             else
             {
                 _lastOriginal = result.Original;
-                _overlay.ShowResult(result.Original, result.Traducao, trimmed);
+                _overlay.ShowResult(result.Original, result.Traducao, wav);
             }
         }
         catch (Exception ex)
@@ -238,6 +214,7 @@ public partial class App : Application
             ResumeVideo();
             _overlay.ShowNotice("Failed: " + ex.Message);
         }
+        finally { _busy = false; }
     }
 
     protected override void OnExit(ExitEventArgs e)

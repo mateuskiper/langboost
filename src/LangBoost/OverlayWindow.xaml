@@ -15,44 +15,6 @@
         TextOptions.TextFormattingMode="Display"
         TextOptions.TextRenderingMode="ClearType">
 
-    <Window.Resources>
-        <!-- Draggable trim handle: small rounded grip sized for the thin timeline. -->
-        <Style x:Key="TrimThumb" TargetType="Thumb">
-            <Setter Property="Width" Value="10"/>
-            <Setter Property="Height" Value="20"/>
-            <Setter Property="Cursor" Value="SizeWE"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border x:Name="Bd" CornerRadius="5" Background="{StaticResource AccentBrush}"
-                                BorderBrush="White" BorderThickness="1.5"/>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <!-- Selection region: solid accent fill; drag to shift the whole [start,end] window. -->
-        <Style x:Key="SelectionThumb" TargetType="Thumb">
-            <Setter Property="Cursor" Value="ScrollAll"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border x:Name="Bd" CornerRadius="3" Background="{StaticResource AccentBrush}"/>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
-
     <!-- Margin gives the drop shadow room to render as a soft rounded glow instead of
          being clipped by the window bounds into a rectangular halo.
          The shadow lives on a dedicated background layer with no children: applying an
@@ -137,8 +99,7 @@
             </StackPanel>
 
             <!-- Result actions: replay (left) + Add/Done (right) on one line, spanning both
-                 columns so each keeps its horizontal edge. Shares Row 1 with ReviewPanel
-                 (mutually exclusive states). -->
+                 columns so each keeps its horizontal edge. -->
             <Grid x:Name="ResultActions" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                   Visibility="Collapsed" Margin="0,12,0,0">
                 <Grid.ColumnDefinitions>
@@ -163,66 +124,6 @@
                     </Button>
                 </StackPanel>
             </Grid>
-
-            <!-- Trim player: listen and select the clip to transcribe.
-                 Spans both columns so the buttons align with the overlay's right edge. -->
-            <StackPanel x:Name="ReviewPanel" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                        Visibility="Collapsed" Margin="0,12,0,0">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="ReviewPlayButton" Style="{StaticResource FlatButton}"
-                            Content="&#x1F50A;" FontFamily="Segoe UI Emoji" MinWidth="0" Width="44" Click="OnReviewPlayClick"/>
-                    <TextBlock x:Name="TimeLabel" Style="{StaticResource CaptionText}"
-                               VerticalAlignment="Center"
-                               Margin="14,0,0,0" Text="00:00.0 / 00:00.0"/>
-                </StackPanel>
-
-                <!-- Timeline + actions on one line: the thin track fills the remaining width
-                     (responsive; sized in code from TrimTrack.ActualWidth — see OnTrackSizeChanged),
-                     Cancel/Send sit in an Auto column on the right. -->
-                <Grid Margin="0,16,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Canvas x:Name="TrimTrack" Grid.Column="0" Height="24" VerticalAlignment="Center"
-                            Background="Transparent"
-                            MouseLeftButtonDown="OnTrackClick" SizeChanged="OnTrackSizeChanged">
-                        <Border x:Name="TrackBg" Height="6" Canvas.Top="9"
-                                CornerRadius="3" Background="{StaticResource TrackBrush}"/>
-                        <Border x:Name="LeftDim" Height="6" Canvas.Top="9" Canvas.Left="0"
-                                CornerRadius="3" Background="#73000000"/>
-                        <Border x:Name="RightDim" Height="6" Canvas.Top="9"
-                                CornerRadius="3" Background="#73000000"/>
-                        <Thumb x:Name="SelectionBar" Height="6" Canvas.Top="9"
-                               Style="{StaticResource SelectionThumb}"
-                               DragDelta="OnSelectionDrag"/>
-                        <Rectangle x:Name="Playhead" Width="2" Height="24" Fill="White" Visibility="Collapsed">
-                            <Rectangle.Effect>
-                                <DropShadowEffect BlurRadius="6" ShadowDepth="0" Opacity="0.9" Color="White"/>
-                            </Rectangle.Effect>
-                        </Rectangle>
-                        <Thumb x:Name="StartThumb" Canvas.Top="2" Style="{StaticResource TrimThumb}"
-                               DragDelta="OnStartThumbDrag"/>
-                        <Thumb x:Name="EndThumb" Canvas.Top="2" Style="{StaticResource TrimThumb}"
-                               DragDelta="OnEndThumbDrag"/>
-                    </Canvas>
-
-                    <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                VerticalAlignment="Center" Margin="14,0,0,0">
-                        <Button Style="{StaticResource FlatButton}"
-                                Content="Cancel" Margin="0,0,10,0" Click="OnReviewCancelClick"/>
-                        <Button Style="{StaticResource PrimaryButton}" Click="OnReviewSendClick">
-                            <StackPanel Orientation="Horizontal">
-                                <Border Style="{StaticResource ShortcutChip}">
-                                    <TextBlock Style="{StaticResource ShortcutChipText}" Text="Enter"/>
-                                </Border>
-                                <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" Text="Send"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
         </Grid>
         </Border>
     </Grid>

@@ -5,10 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What it is
 
 A WPF desktop app (Windows) for studying languages. It keeps the last N seconds of system audio in
-a circular buffer (N configurable, 1–10s, default 5); when you press **Ctrl+Enter**, it opens
-a **trim player** so the user can listen and select the segment, which is then sent to Google Gemini
-— which **transcribes (EN) and translates (PT) in a single call** — and the result appears in an
-always-visible overlay, with a player to replay the segment that was sent. Buttons on the overlay
+a circular buffer (N configurable, 1–10s, default 5); when you press **Ctrl+Enter** (or click
+**Capture**), the whole buffered clip is sent straight to Google Gemini — which **transcribes (EN)
+and translates (PT) in a single call** — and the result appears in an always-visible overlay, with a
+player to replay the clip that was sent. Buttons on the overlay
 allow opening **settings** (⚙) and **closing** (✕). All code lives in `src/LangBoost/`.
 See `README.md` for end-user usage.
 
@@ -43,7 +43,7 @@ dotnet publish src/LangBoost/LangBoost.csproj -c Release -r win-x64 --self-conta
   regression contract — make code changes pass them; never weaken a test to make a commit go through.
 - To validate the Gemini key without spending tokens:
   ```powershell
-  Invoke-RestMethod "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash" `
+  Invoke-RestMethod "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash" `
     -Headers @{ "x-goog-api-key" = $env:GEMINI_API_KEY }
   ```
 
@@ -71,30 +71,28 @@ Without a key, the app starts and the overlay shows "GEMINI_API_KEY not configur
 ## Architecture
 
 Pipeline triggered by the global hotkey (orchestrated in `App.xaml.cs` → `OnStartup` /
-`OnHotkeyTriggered` / `OnSendForTranscription`):
+`OnHotkeyTriggered`):
 
 ```
 WasapiLoopbackCapture (all system audio)
   → AudioRingBuffer (last N seconds, overwrites the oldest)
   → [hotkey] Snapshot() → AudioFormatConverter.ToWav16kMono (WAV 16kHz mono PCM16)
-  → OverlayWindow.ShowReview(wav)  (trim player: listen + select segment)
-  → [Send] AudioFormatConverter.TrimWav(wav, start, end)  (trims the segment)
   → GeminiClient (1 POST, responseSchema → JSON {original, traducao})
-  → OverlayWindow.ShowResult(orig, trad, trimmedWav)  (text + player; until "Done")
+  → OverlayWindow.ShowResult(orig, trad, wav)  (text + player; until "Done")
 ```
 
 Responsibility map:
 
 | File | Role |
 |---|---|
-| `App.xaml.cs` | Wires everything together; `OnHotkeyTriggered` prepares the WAV and opens the trim view; `OnSendForTranscription` trims + calls Gemini in `Task.Run`; `ApplyConfig`/`RestartCapture` rebuild the pipeline when settings are saved |
+| `App.xaml.cs` | Wires everything together; `OnHotkeyTriggered` prepares the WAV and calls Gemini in `Task.Run` (a `_busy` flag ignores repeated hotkeys while in flight); `ApplyConfig`/`RestartCapture` rebuild the pipeline when settings are saved |
 | `AudioCaptureService.cs` | `WasapiLoopbackCapture`; writes to the ring buffer on `DataAvailable` |
 | `AudioRingBuffer.cs` | Thread-safe circular buffer (lock); `Snapshot()` returns in chronological order |
-| `AudioFormatConverter.cs` | `MediaFoundationResampler` downmixes+resamples to WAV 16kHz mono; `TrimWav` trims the selected range |
-| `AudioPlayer.cs` | In-memory WAV player (`WaveOutEvent`); used by the trim and result players |
+| `AudioFormatConverter.cs` | `MediaFoundationResampler` downmixes+resamples to WAV 16kHz mono; `TrimWav` (range trim) is currently unused by the app but kept and tested |
+| `AudioPlayer.cs` | In-memory WAV player (`WaveOutEvent`); used by the result player |
 | `GeminiClient.cs` | REST `generateContent`; inline base64 audio; parses `{original, traducao}` |
 | `HotkeyManager.cs` | `RegisterHotKey`/`WM_HOTKEY` via the overlay's `HwndSource` |
-| `OverlayWindow.xaml(.cs)` | Borderless/topmost/semi-transparent overlay; idle/status/**review (trim)**/result states; ⚙/✕ buttons; trim track with 2 handles and playhead |
+| `OverlayWindow.xaml(.cs)` | Borderless/topmost/semi-transparent overlay; idle/status/busy/notice/result states; ⚙/✕ buttons |
 | `SettingsWindow.xaml(.cs)` | **Focusable** window (separate from the overlay) for buffer (1–10s) and API key |
 | `AppConfig.cs` | Resolves key/model/seconds; `Save()` persists with the key encrypted (DPAPI) |
 
@@ -108,13 +106,11 @@ Responsibility map:
 - **`WS_EX_NOACTIVATE`** is applied in `OverlayWindow.OnSourceInitialized` so the overlay **does not
   steal focus** from the video. Keep it when touching the window style.
 - **The overlay does not receive keyboard focus** (a consequence of `WS_EX_NOACTIVATE`): mouse clicks
-  and drags work (buttons, sliders, trim handles), but **text fields do not**. That's why the API
+  and drags work (buttons, sliders), but **text fields do not**. That's why the API
   key lives in the `SettingsWindow` (a normal, focusable window opened via `ShowDialog`), and never
   in the overlay.
-- **Trim track:** handle positions are in **pixels** over a fixed-width track (`TrackWidth`),
-  converted to time via `XToTime`/`TimeToX` using `AudioPlayer.Duration`. A `DispatcherTimer` moves
-  the playhead and **stops playback at the end of the selection** (`WaveOutEvent` has no "play until
-  X"). Always stop playback (`StopPlayback`) when switching states.
+- **Result player:** a `DispatcherTimer` resets the 🔊 button when playback ends (`WaveOutEvent` has
+  no "play until X"). Always stop playback (`StopPlayback`) when switching states.
 - **DPAPI:** the encrypted key (`apiKeyProtected`) only decrypts on the **same Windows user**; a
   config copied to another machine/user fails on `Unprotect` and is treated as "no key".
 - **Captures ALL system audio** (not just the browser) — notifications enter the buffer. Migrating
